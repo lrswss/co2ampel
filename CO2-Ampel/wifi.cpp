@@ -68,37 +68,51 @@ static void wifi_mdns() {
 }
 
 
-static void wifi_init() {
+static bool wifi_init() {
   if (wifiActive)
-    return;
+    return true;
   Serial.println(F("WiFi started."));
-  WiFi.mode(WIFI_AP_STA);
-  wifiActive = true;
-  delay(500);
+  if (WiFi.mode(WIFI_AP_STA)) {
+    wifiActive = true;
+  } else {
+    Serial.println(F("WiFi failed!"));
+    logMsg("wifi failed");
+    blink_leds(HALF_RING, RED, 250, 2, false);
+    delay(750);
+  }
+  delay(250);
+  return wifiActive;
 }
 
 
-static void wifi_start_ap(const char* ssid, const char* pass) {
+bool wifi_start_ap(const char* ssid, const char* pass) {
   char buf[64], ap_ssid[32];
 
   if (!strlen(ssid)) {
     Serial.println(F("WiFi: failed to start access point, no SSID set!"));
-    return;
+    return false;;
   } else if (strlen(pass) < 8) {
     Serial.println(F("WiFi: failed to start access point, password too short!"));
-    return;
-  } else if (!wifiActive)
-    wifi_init();
-    
+    return false;
+  } else if (!wifiActive && !wifi_init())
+    return false;
+
   sprintf(ap_ssid, "%s-%s", ssid, systemID().c_str());
-  WiFi.softAP(ap_ssid, pass);
-  Serial.printf("WiFi: local AP with SSID %s, IP %s started.\n", 
-    ap_ssid, WiFi.softAPIP().toString().c_str());
-  sprintf(buf, "start access point %s", ap_ssid);
-  wifiAP = true;
-  wifi_mdns();
-  logMsg(buf);
-  delay(500);
+  if (WiFi.softAP(ap_ssid, pass)) {
+    Serial.printf("WiFi: local AP with SSID %s, IP %s started.\n",
+      ap_ssid, WiFi.softAPIP().toString().c_str());
+    sprintf(buf, "start access point %s", ap_ssid);
+    logMsg(buf);
+    wifi_mdns();
+    blink_leds(SYSTEM_LEDS, BLUE, 100, 2, true);
+    wifiAP = true;
+  } else {
+    Serial.println(F("WiFi: failed to start local AP!"));
+    logMsg("access point failed");
+    blink_leds(HALF_RING, RED, 250, 2, false);
+  }
+  delay(1000);
+  return wifiAP;
 }
 
 
@@ -109,13 +123,13 @@ static bool wifi_start_sta(const char* ssid, const char* pass, uint8_t timeoutSe
   if (!strlen(ssid)) {
     Serial.println(F("WiFi: failed to connect to station, no SSID set!"));
     return false;
-  } else if (!wifiActive)
-    wifi_init();
+  } else if (!wifiActive && !wifi_init())
+    return false;
 
   if (wifiUplink && WiFi.status() == WL_CONNECTED)
     return true;
 
-  Serial.printf("WiFi: connecting to SSID %s", ssid);
+  Serial.printf("WiFi: connecting to SSID %s...", ssid);
   WiFi.begin(ssid, pass);
   save_leds();
   set_leds(SYSTEM_LED1, BLUE);
@@ -131,33 +145,32 @@ static bool wifi_start_sta(const char* ssid, const char* pass, uint8_t timeoutSe
   if (WiFi.status() == WL_CONNECTED) {
     Serial.printf("with IP %s.\n", WiFi.localIP().toString().c_str());
     sprintf(buf, "connect ssid %s, ip %s", ssid, WiFi.localIP().toString().c_str());
-    wifi_mdns();
-    wifiUplink = true;
-    wifiSettings.enableWLANUplink = true;
     logMsg(buf);
-    delay(500);
-    return wifiUplink;
-
+    blink_leds(SYSTEM_LED1, GREEN, 100, 2, true);
+    wifi_mdns();
+    wifiSettings.enableWLANUplink = true;
+    wifiUplink = true;
   } else {
     Serial.println(F("failed!"));
-    blink_leds(SYSTEM_LED1, RED, 250, 2, true);
+    blink_leds(HALF_RING, RED, 250, 2, false);
     wifiUplink = false;
-    delay(1000);
-    return wifiUplink;
   }
+  delay(1000);
+  return wifiUplink;
 }
 
 
 // start or stop local access point
-void wifi_hotspot(bool terminate) {
+bool wifi_hotspot(bool terminate) {
   if (terminate) {
     if (wifiAP) {
       WiFi.softAPdisconnect(true);
       Serial.println(F("WiFi: local AP stopped."));
       wifiAP = false;
     }
+    return wifiAP;
   } else {
-    wifi_start_ap(WIFI_AP_SSID, wifiSettings.wifiApPassword);
+    return wifi_start_ap(WIFI_AP_SSID, wifiSettings.wifiApPassword);
   }
 }
 
@@ -188,7 +201,6 @@ void wifi_stop() {
   Serial.println(F("WiFi stopped."));
   Serial.flush();
   logMsg("wifi stopped");
-  delay(500);
 }
 
 

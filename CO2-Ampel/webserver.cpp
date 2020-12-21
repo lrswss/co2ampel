@@ -11,7 +11,6 @@
 #include "webserver.h"
 #include "lorawan.h"
 #include "logging.h"
-#include "html.h"
 #include "utils.h"
 #include "led.h"
 #include "rtc.h"
@@ -19,6 +18,12 @@
 #include "sensors.h"
 #include "wifi.h"
 #include "config.h"
+
+#ifdef LANG_EN
+#include "html_EN.h"
+#else
+#include "html_DE.h"
+#endif
 
 ESP8266WebServer webserver(80);
 static uint32_t webserverRequestMillis = 0;
@@ -359,9 +364,9 @@ void webserver_start(uint16_t timeout) {
       settings.beginSleep = webserver.arg("noopstart").toInt();
     if (webserver.arg("noopend").toInt() >= 0 && webserver.arg("noopend").toInt() <= 23)
       settings.endSleep = webserver.arg("noopend").toInt();
-    if (webserver.arg("username").length() >= 3 && webserver.arg("username").length() <= 15)
+    if (webserver.arg("username").length() >= 4 && webserver.arg("username").length() <= 15)
       strncpy(settings.authUsername, webserver.arg("username").c_str(), 15);
-    if (webserver.arg("password").length() >= 6 && webserver.arg("password").length() <= 15)
+    if (webserver.arg("password").length() >= 4 && webserver.arg("password").length() <= 15)
       strncpy(settings.authPassword, webserver.arg("password").c_str(), 15);
     if (webserver.arg("loginterval").toInt() >= 60 && webserver.arg("loginterval").toInt() <= 900)
       settings.loggingInterval = webserver.arg("loginterval").toInt();
@@ -678,7 +683,6 @@ bool webserver_stop(bool force) {
   if (webserverRequestMillis > 0) {
     webserver.stop();
     webserverRequestMillis = 0;
-    set_leds(SYSTEM_LED1, 0);
     logMsg("webserver off");
     Serial.println(F("Webserver stopped."));
   }

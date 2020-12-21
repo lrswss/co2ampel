@@ -77,7 +77,7 @@ function calibrateCO2Sensor() {
     alert("Aufwärmphase noch aktiv!");
   } else if (calibrationInProgress) {
     alert("CO2-Sensorkalibrierung noch aktiv!");
-  } else if (confirm("CO2-Sensor wirklich neu kalibrieren? Der Sensor muss für min. 5 Minuten der Außenluft ausgesetzt werden.")) {
+  } else if (confirm("CO2-Sensor wirklich neu kalibrieren? Der Sensor muss für ca. 5 Minuten der Außenluft ausgesetzt werden.")) {
     document.getElementById("timeoutInfo").style.display = "none";
     document.getElementById("heading").scrollIntoView();
     calibrationInProgress = true;
@@ -288,7 +288,7 @@ const char UPDATE_html[] PROGMEM = R"=====(
 <h2>Firmware-Update</h2>
 </div>
 <div style="margin-left:50px;margin-bottom:10px">
-1. Firmware-Datei auswählen<br>
+1. Firmware-Datei ausw&auml;hlen<br>
 2. Aktualisierung starten<br>
 3. Upload dauert ca. 15 Sek.<br>
 4. CO2-Ampel neustarten
@@ -296,7 +296,7 @@ const char UPDATE_html[] PROGMEM = R"=====(
 <div>
 <form method="POST" action="/update" enctype="multipart/form-data" id="upload_form">
   <input type="file" name="update">
-  <p><button class="button bred" type="submit">Aktualisierung durchführen</button></p>
+  <p><button class="button bred" type="submit">Aktualisierung durchf&uuml;hren</button></p>
 </form>
 <p><button onclick="location.href='/';">Startseite</button></p>
 </div>
@@ -380,7 +380,7 @@ function deleteLogs() {
 const char LOGS_FOOTER_html[] PROGMEM = R"=====(
 </div>
 <div>
-<p><button class="button bred" onclick="deleteLogs();">Logdateien löschen</button></p>
+<p><button class="button bred" onclick="deleteLogs();">Logdateien l&ouml;schen</button></p>
 <p><button onclick="location.href='/sendlogs';">Logdateien herunterladen</button></p>
 <p><button onclick="location.href='/';">Startseite</button></p>
 </div>
@@ -546,7 +546,7 @@ function getSetup() {
 <div style="text-align:left;display:inline-block;min-width:340px;">
 <div style="text-align:center;">
 <h2 id="heading">Einstellungen</h2>
-<div id="message" style="display:none;margin-top:10px;margin-bottom:5px;color:red;font-weight:bold;height:16px;text-align:center;max-width:335px">
+<div id="message" style="display:none;margin-top:10px;margin-bottom:8px;color:red;font-weight:bold;height:16px;text-align:center;max-width:335px">
 <span id="configSaved" style="display:none;color:green">Einstellungen gespeichert!</span>
 <span id="configSaveFailed" style="display:none;color:red">Fehler beim Speichern!</span>
 <span id="configReset" style="display:none;color:red">Einstellungen zur&uuml;ckgesetzt!</span>
@@ -569,7 +569,7 @@ function getSetup() {
   <fieldset><legend><b>&nbsp;Messparameter&nbsp;</b></legend>
   <p><b>Messinterval (min. __INTERVALMIN__ Sek.)</b><br />
   <input name="interval" value="__INTERVAL__" onkeyup="digitsOnly(this)"></p>
-  <p id="medianfilter"><b>Anzahl Messungen für Medianwert:</b><br />
+  <p id="medianfilter"><b>Anzahl Messungen f&uuml;r Medianwert:</b><br />
   <input name="samples" value="__SAMPLES__" onkeyup="digitsOnly(this)"></p>
   <p><input id="checkbox_medianfilter" name="medianfilter" type="checkbox" onclick="toggleMedianFilter();" __MEDIANFILTER__><b>Medianfilter aktivieren</b></p></fieldset>
   <br />
@@ -592,7 +592,7 @@ function getSetup() {
   <p id="loginterval"><b>Aufzeichungsinterval (min. 60 Sek.)</b><br />
   <input name="loginterval" value="__LOGINTERVAL__" onkeyup="digitsOnly(this)"></p>
   </fieldset>
-  <p style="margin-top:25px"><button class="button bred" onclick="clearSettings(); return false;">Einstellungen zurücksetzen</button></p>
+  <p style="margin-top:25px"><button class="button bred" onclick="clearSettings(); return false;">Einstellungen zur&uuml;cksetzen</button></p>
   <p><button type="submit">Einstellungen speichern</button></p>
 </form>
 <p><button style="margin-top:15px" onclick="location.href='/network';">Netzwerkeinstellungen</button></p>
@@ -735,7 +735,7 @@ function clearSettings() {
 <div style="text-align:left;display:inline-block;min-width:340px;">
 <div style="text-align:center;">
 <h2 id="heading">Netzwerkeinstellungen</h2>
-<div id="message" style="display:none;margin-top:10px;margin-bottom:5px;color:red;font-weight:bold;height:16px;text-align:center;max-width:335px">
+<div id="message" style="display:none;margin-top:10px;margin-bottom:8px;color:red;font-weight:bold;height:16px;text-align:center;max-width:335px">
 <span id="configSaved" style="display:none;color:green">Einstellungen gespeichert!</span>
 <span id="configSaveFailed" style="display:none;color:red">Fehler beim Speichern!</span>
 <span id="configReset" style="display:none;color:red">Einstellungen zur&uuml;ckgesetzt!</span>
@@ -783,7 +783,7 @@ function clearSettings() {
       <p><input name="mqttjson" type="checkbox" __MQTTJSON__><b>Pro Messwert ein Topic</b></p>
     </span></fieldset>
   </span>
-  <p style="margin-top:25px"><button class="button bred" onclick="clearSettings(); return false;">Einstellungen zurücksetzen</button></p>
+  <p style="margin-top:25px"><button class="button bred" onclick="clearSettings(); return false;">Einstellungen zur&uuml;cksetzen</button></p>
   <p><button type="submit">Einstellungen speichern</button></p>
 </form>
 <p><button onclick="location.href='/';">Startseite</button></p>
@@ -1004,16 +1004,16 @@ function selectSF() {
 <div style="text-align:center;">
 <h2 id="heading">LoRaWAN-Parameter</h2>
 <h3>DevEUI: __DEVEUI__</h3>
-<div id="message" style="display:none;margin-top:10px;margin-bottom:5px;color:red;height:16px;font-weight:bold;text-align:center;max-width:335px">
+<div id="message" style="display:none;margin-top:10px;margin-bottom:8px;color:red;height:16px;font-weight:bold;text-align:center;max-width:335px">
 <span id="configSaved" style="display:none;color:green">Einstellungen gespeichert!</span>
 <span id="configSaveFailed" style="display:none;color:red">Fehler beim Speichern!</span>
 <span id="configReset" style="display:none;color:red">Einstellungen zur&uuml;ckgesetzt!</span>
-<span id="appeuiError" style="display:none">AppEUI für OTAA ungültig!</span>
-<span id="appkeyError" style="display:none">AppKey für OTAA ungültig!</span>
-<span id="devaddrError" style="display:none">DevAddr für ABP ungültig!</span>
-<span id="nwkskeyError" style="display:none">NwksKey für ABP ungültig!</span>
-<span id="appskeyError" style="display:none">AppsKey für ABP ungültig!</span>
-<span id="authError" style="display:none">OTAA oder ABP auswählen!</span>
+<span id="appeuiError" style="display:none">AppEUI f&uuml;r OTAA ung&uuml;ltig!</span>
+<span id="appkeyError" style="display:none">AppKey f&uuml;r OTAA ung&uuml;ltig!</span>
+<span id="devaddrError" style="display:none">DevAddr f&uuml;r ABP ung&uuml;ltig!</span>
+<span id="nwkskeyError" style="display:none">NwksKey f&uuml;r ABP ung&uuml;ltig!</span>
+<span id="appskeyError" style="display:none">AppsKey f&uuml;r ABP ung&uuml;ltig!</span>
+<span id="authError" style="display:none">OTAA oder ABP ausw&auml;hlen!</span>
 </div>
 </div>
 <div style="max-width:335px">
@@ -1029,7 +1029,7 @@ function selectSF() {
   <p><b>Spreading Factor OTAA Join</b><select id="drjoin_selector" name="drjoin">
   <option value="5">SF7</option><option value="4">SF8</option><option value="3">SF9</option>
   <option value="2">SF10</option><option value="1">SF11</option><option value="0">SF12</option></select></p>
-  <p><input id="ttn_checkbox" name="ttn" type="checkbox" __TTN__ onclick="toggleTTN();"><b>Daten über TTN senden</b></p>
+  <p><input id="ttn_checkbox" name="ttn" type="checkbox" __TTN__ onclick="toggleTTN();"><b>Daten &uuml;ber TTN senden</b></p>
   </span>
   </fieldset>
   <span id="lorawan2">
@@ -1050,7 +1050,7 @@ function selectSF() {
   <input id="appskey_input" name="appskey" size="32" maxlength="48" value="__APPSKEY__" onkeyup="hexOnly(this);"></p>
   <p><input id="abp_checkbox" name="adp" type="checkbox" onclick="toggleABP();" __ABP__ ><b>ABP verwenden</b></p></fieldset>
   </span>
-  <p style="margin-top:25px"><button class="button bred" onclick="clearSettings(); return false;">Einstellungen zurücksetzen</button></p>
+  <p style="margin-top:25px"><button class="button bred" onclick="clearSettings(); return false;">Einstellungen zur&uuml;cksetzen</button></p>
   <p><button type="submit">Einstellungen speichern</button></p>
 </form>
 <p><button onclick="location.href='/';">Startseite</button></p>

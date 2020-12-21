@@ -73,7 +73,7 @@ void checkLowBat() {
   if (vbat <= 2.0) {
     Serial.println(F("Battery not connected."));
   } else if (vbat <= VBAT_DEEPSLEEP) {
-    blink_leds(QUARTER_RING, RED, 100, 4, false);
+    blink_leds(QUARTER_RING, RED, 100, 6, false);
     dtostrf(vbat, 4, 2, vbatStr);
     Serial.printf("WARNING: low battery %sV, enter deep sleep!", vbatStr);
     sprintf(buf, "low battery %sV, sleeping", vbatStr);
@@ -149,7 +149,7 @@ bool checkNOOPTime(uint8_t begin_hour, uint8_t end_hour) {
     noop_time = true;
   }
 
-  if (noop_time) {
+  if (noop_time && co2status != NOOP) {
     co2status = NOOP;
     Serial.printf("NOOP from %.2d:00 to %.2d:00\n", begin_hour, end_hour);
     sprintf(buf, "noop %.2d:00-%.2d:00", begin_hour, end_hour);

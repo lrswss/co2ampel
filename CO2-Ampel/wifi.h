@@ -34,7 +34,7 @@ typedef struct {
 
 extern wifiprefs_t wifiSettings;
 
-void wifi_hotspot(bool terminate);
+bool wifi_hotspot(bool terminate);
 bool wifi_uplink(bool reconnect);
 void wifi_stop();
 void loadWifiSettings();

@@ -1,4 +1,5 @@
 /***************************************************************************
+
   Copyright (c) 2020 Lars Wessels
 
   This file a part of the "CO2-Ampel" source code.
@@ -117,7 +118,7 @@ uint16_t bme280_init() {
       }
   }
   bme280Init = true;
-  blink_leds(HALF_RING, GREEN, 100, 2, false);
+  blink_leds(SYSTEM_LEDS, GREEN, 100, 2, true);
   delay(1000);
 }
 
@@ -182,7 +183,7 @@ void scd30_init(uint16_t pressure) {
     logMsg(buf);
   }
   scd30Init = true;
-  blink_leds(HALF_RING, GREEN, 100, 2, false);
+  blink_leds(SYSTEM_LEDS, GREEN, 100, 2, true);
   delay(1000);
 }
 
@@ -228,7 +229,7 @@ bool scd30_readings(bool reset) {
       else
         scd30_co2ppm = co2ppm;
 
-      if (co2ppm > 0) {
+      if (co2ppm > CO2_LOWER_BOUND) {
         lastReading = millis()/1000;
         noCO2Reading = 0;
         Serial.print(F("SCD30: co2("));
@@ -249,7 +250,7 @@ bool scd30_readings(bool reset) {
         Serial.print(scd30_humidity, 1);
         Serial.println(F("%)"));
       } else {
-        blink_leds(SYSTEM_LED2, RED, 100, 2, true);
+        blink_leds(SYSTEM_LEDS, RED, 100, 2, true);
         Serial.println(F("SCD30: invalid CO2 reading"));
         noCO2Reading++;
         return true; // will trigger state NODATA

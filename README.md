@@ -1,9 +1,9 @@
 ## CO2-Ampel
 
-<div style="text-align:center;margin-top:25px">
-<img src="pics/co2ampel.png" alt="CO2Ampel" width="300">
-<img style="margin-left:30px" alt="CO2-Ampel disassembled" src="pics/co2ampel_without_hood.png" width="300">
-</div>
+<p align="center">
+<img src="pics/co2ampel.png" alt="CO2Ampel" width="300" hspace="10" vspace="10">
+<img src="pics/co2ampel_without_hood.png" alt="CO2-Ampel disassembled" width="300" hspace="10" vspace="10">
+</p>
 
 Yet another CO<sub>2</sub>-Ampel based on an ESP8266 (Wemos D1 mini) to continuously
 measure CO<sub>2</sub> concentration indoors with a [SCD30](https://www.sensirion.com/en/environmental-sensors/carbon-dioxide-sensors/carbon-dioxide-sensors-CO<sub>2</sub>/) CO<sub>2</sub> sensor accompanied by a [BME280](https://www.bosch-sensortec.com/products/environmental-sensors/humidity-sensors-bme280/)
@@ -51,9 +51,9 @@ plastic tin.
 
 ## Putting it all together
 
-<div style="text-align:center;margin-top:25px">
-<img src="pics/co2ampel_closeup_wemos_stack.png" alt="CO2-Ampel with hood taken off" width="400">
-</div>
+<p align="center">
+<img src="pics/co2ampel_closeup_wemos_stack.png" alt="CO2-Ampel with hood taken off" width="400" vspace="10">
+</p>
 
 All Wemos components are simply stacked together. The battery shield is
 placed at the bottom, the Wemos D1 mini in the middle and the (optional)
@@ -124,7 +124,7 @@ will give you a hand.
 * [ESP8266mDNS](https://github.com/esp8266/Arduino/tree/master/libraries/ESP8266mDNS)
 * [uEEPROMLib](https://github.com/Naguissa/uEEPROMLib)
 * [RTClib](https://github.com/adafruit/RTClib)
-* [Adafruit_NeoPixel](https://github.com/adafruit/Adafruit_NeoPixel)
+* [FastLED](https://github.com/FastLED/FastLED)
 * [PubSubClient](https://github.com/knolleary/pubsubclient/releases)
 * [ArduinoJson](https://arduinojson.org/)
 * [BME280I2C](https://github.com/finitespace/BME280)
@@ -180,9 +180,9 @@ valid CO<sub>2</sub> readings from the SCD30 sensor.
 
 ## Adjust device settings
 
-<div style="text-align:center;margin-top:25px">
-<img src="pics/web_main_page.png" width="300">
-</div>
+<p align="center">
+<img src="pics/web_main_page.png" width="300" vspace="10">
+</p>
 
 During the initial setup phase the CO<sub>2</sub>-Ampel will start an WiFi access
 point with this SSID `CO<sub>2</sub>-Ampel` followed by six alphanumeric characters
@@ -190,8 +190,10 @@ derived from the Wemos D1 mini MAC address. You can connect to the access
 point within a timeout initilially set to 10 minutes using the password
 specified by `WIFI_AP_PASSWORD` (default is `__mysecret__`). Then point
 your favorite browser to `http://192.168.4.1` and you'll be presented an
-extensive web interface to further configure your CO<sub>2</sub>-Ampel. Settings are
-saved in the EEPROM of the RTC module and will thus survive a power off.
+extensive web interface to further configure your CO<sub>2</sub>-Ampel.
+Its language is preset at compile time by either defining `LANG_DE` or
+`LAND_EN` in `config.h`. Settings are saved in the EEPROM of the RTC module
+and will thus survive a power off.
 
 ## CO2 sensor calibration
 
@@ -219,6 +221,13 @@ The CO<sub>2</sub>-Ampel will flash red for 15 seconds to indicate calibration f
 The temperature offset between the onboard RH/T sensor and the BME280 is
 continously corrected automatically based on their standard deviation.
 Intial offset is set to 1.9 in `sensors.h` with `SCD30_TEMP_OFFSET`.
+
+## Disclaimer
+
+Even though this device consists of the same components as professional
+systems it does not have any certification. It's a home made product for
+educational purposes and thus cannot be used as medical device or serve
+as personal protective equipment in the sense of any legislation.
 
 ## Contributing
 

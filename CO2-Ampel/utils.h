@@ -20,8 +20,8 @@ extern "C" {
 #include "user_interface.h"
 }
 
-// if battery voltage fall below this level 
-// resort to deep sleep to protect battery
+// if battery voltage falls below this level
+// resort to deep sleep to protect batteries
 #define VBAT_DEEPSLEEP 3.55
 
 enum rstcodes {

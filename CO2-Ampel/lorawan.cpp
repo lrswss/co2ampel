@@ -256,10 +256,13 @@ void lmic_init() {
     printDataRate();
     Serial.println(".");
   }
-  lmicInited = true;
+
   Serial.printf("Sensor readings will be transmitted over LoRaWAN every %d secs.\n", lorawanSettings.txInterval);
   sprintf(buf, "lorawan started, txinterval %d secs", lorawanSettings.txInterval);
   logMsg(buf);
+  blink_leds(SYSTEM_LEDS, MAGENTA, 100, 2, true);
+  lmicInited = true;
+  delay(500);
 
   if (!LMIC.seqnoUp && lorawanSettings.useOTAA) {
     LMIC_sendAlive(); // also triggers OTAA join
@@ -286,7 +289,7 @@ void onEvent (ev_t event) {
     case EV_JOINED:
       Serial.println(F("OTAA join successful."));
       logMsg("lorawan joined");
-      blink_leds(SYSTEM_LED2, GREEN, 100, 4, true);
+      blink_leds(SYSTEM_LED1, GREEN, 100, 2, true);
       Serial.println(F("Disable LinkCheckMode."));
       LMIC_setLinkCheckMode(0); // avoid EV_LINK_DEAD without DN
       LMIC_setDrTxpow(lorawanSettings.drSend, LORAWAN_TXPOWER); // reset to default DR
@@ -300,7 +303,7 @@ void onEvent (ev_t event) {
     case EV_JOIN_FAILED:
       Serial.println(F("OTAA join failed!"));
       logMsg("lorawan join failed");
-      blink_leds(SYSTEM_LED2, RED, 50, 4, true);
+      blink_leds(SYSTEM_LED1, RED, 50, 4, true);
       break;
     case EV_REJOIN_FAILED:
       Serial.println(F("Rejoin failed!"));
@@ -309,7 +312,7 @@ void onEvent (ev_t event) {
     case EV_TXCOMPLETE:
       Serial.println(F("TX completed (including RX windows)."));
       logMsg("lorawan tx completed");
-      blink_leds(SYSTEM_LED2, GREEN, 100, 2, true);
+      blink_leds(SYSTEM_LED1, GREEN, 100, 2, true);
       if (LMIC.txrxFlags & TXRX_ACK)
         Serial.println(F("Received ACK messages."));
       saveLoRaWANSession();
@@ -344,7 +347,7 @@ void onEvent (ev_t event) {
 // send off payload with sensor data
 void lmic_send(osjob_t* job) {
   uint8_t i = 1;
-  uint8_t payload[13];
+  uint8_t payload[15];
   uint16_t temp;
 
   if (!lorawanSettings.enabled)
@@ -377,6 +380,10 @@ void lmic_send(osjob_t* job) {
     payload[i++] = byte(scd30_co2ppm >> 8);
     payload[i++] = byte(scd30_co2ppm & 0xff);
 
+    // battery voltage
+    payload[i++] = 0x20;
+    payload[i++] = int(getVBAT()*100) - 256;
+
     // payload size serves as simple check sum
     payload[0] = i;
 
@@ -385,7 +392,7 @@ void lmic_send(osjob_t* job) {
     Serial.println(F(") queued."));
     LMIC_setTxData2(1, payload, i, 0);  // no ack
     save_leds();
-    blink_leds(SYSTEM_LED2, MAGENTA, 250, 1, true);
+    blink_leds(SYSTEM_LED1, MAGENTA, 250, 1, true);
   }
 }
 
@@ -408,22 +415,22 @@ bool lmic_ready() {
 
 // wait for pending LoRaWAN jobs for given number of seconds
 // optionaly toggle LED while waiting
-void waitForLorawanJobs(uint8_t secs, bool toogleLED) {
+void waitForLorawanJobs(uint8_t secs, bool toggleLED) {
   uint32_t wait = 0;
 
   while (lmicInited && ((LMIC.opmode & (OP_TXRXPEND|OP_JOINING|OP_POLL)) ||
           os_queryTimeCriticalJobs(ms2osticks(secs * 1000)))) {
     if (wait == 2500)
       Serial.println(F("LoRaWAN jobs pending, waiting..."));
-    if (toogleLED && (wait > 1000) && !(wait % 250))
-      toogle_leds(SYSTEM_LED2, MAGENTA);
+    if (toggleLED && (wait > 1000) && !(wait % 250))
+      toggle_leds(SYSTEM_LED1, MAGENTA);
     if (wait > secs * 1000)
       break;
     os_runloop_once();
     wait++;
     delay(1);
   }
-  clear_leds(SYSTEM_LED2);
+  clear_leds(SYSTEM_LED1);
   delay(500);
 }
 

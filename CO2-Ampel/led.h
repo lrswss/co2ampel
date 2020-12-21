@@ -11,18 +11,21 @@
 #ifndef _LED_H
 #define _LED_H
 
+#define NEOPIXEL_DATA_PIN 0  // GPIO0
+#define FASTLED_INTERNAL
+
 #include <Arduino.h>
-#include <Adafruit_NeoPixel.h>
+#include <FastLED.h>
 #include "config.h"
 
-#define GREEN Adafruit_NeoPixel::Color(0,255,0)
-#define RED Adafruit_NeoPixel::Color(255,0,0)
-#define BLUE Adafruit_NeoPixel::Color(0,0,255)
-#define YELLOW Adafruit_NeoPixel::Color(255,110,0)
-#define MAGENTA Adafruit_NeoPixel::Color(255,0,255)
-#define WHITE Adafruit_NeoPixel::Color(255,150,150)
-#define PURPLE Adafruit_NeoPixel::Color(150,0,200)
-#define CYAN Adafruit_NeoPixel::Color(0,255,255)
+#define GREEN CRGB::Green
+#define RED CRGB::Red
+#define BLUE CRGB::Blue
+#define YELLOW CRGB::Yellow
+#define MAGENTA CRGB::Magenta
+#define WHITE CRGB::White
+#define CYAN CRGB::Cyan
+#define ORANGE CRGB::DarkOrange
 
 #ifdef HAS_LORAWAN_SHIELD
 // two WS2812 LEDs on LoRaWAN-Shield and ring with 12 LEDs
@@ -50,8 +53,6 @@ enum PixelBits {
 };
 #endif
 
-extern Adafruit_NeoPixel neopixels;
-
 void led_init();
 void clear_leds(PixelBits pixels);
 void save_leds();
@@ -59,6 +60,6 @@ void restore_leds();
 void set_leds(PixelBits pixels, uint32_t color);
 void blink_leds(PixelBits pixels, uint32_t color, uint16_t pause, uint8_t blinks, bool restore);
 void timer_leds(PixelBits pixels, uint32_t color, uint16_t timeout_ms, bool restore);
-void toogle_leds(PixelBits pixels, uint32_t color);
+void toggle_leds(PixelBits pixels, uint32_t color);
 
 #endif

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="author" content="(c) 2020 Lars Wessels, Karlsruhe, GERMANY">
+<title>RESTful</title>
+<style>
+body{padding:20px 0px 0px 20px;font-family:sans-serif;}
+h1{font-size:1.5em;}
+p{line-height:0.7em;}
+#ampel{border:2px solid grey;padding:0px 0px 15px 15px;width:245px;}
+#labels{float:left;width:135px;}
+#status{background-color:#eeeeee;width:215px;padding: 2px 2px 2px 10px;}
+</style>
+<script>
+function getReadings() {
+	var xhttp = new XMLHttpRequest();
+	var res;
+
+	if (document.getElementById("ip").value.length < 8)
+		return;
+
+	xhttp.onreadystatechange = function() {
+		if (this.readyState == 4 && this.status == 200) {
+			res = JSON.parse(xhttp.responseText);
+			document.getElementById("temp").innerHTML = res.temperature;
+			document.getElementById("hum").innerHTML = res.humidity;
+			document.getElementById("pres").innerHTML = res.pressure;
+			document.getElementById("co2").innerHTML = res.co2median;
+			document.getElementById("vbat").innerHTML = res.vbat;
+			if (res.co2status.indexOf("good") != -1) {
+				document.getElementById("status").style.backgroundColor = "#33cc33";
+			} else if (res.co2status.indexOf("medium") != -1) {
+				document.getElementById("status").style.backgroundColor = "#f9f906";
+			} else if (res.co2status.indexOf("critical") != -1) {
+				document.getElementById("status").style.backgroundColor = "#f25a5a";
+			} else if (res.co2status.indexOf("alarm") != -1) {
+				document.getElementById("status").style.backgroundColor = "#f25af2";
+			} else if (res.co2status.indexOf("alarm") != -1) {
+				document.getElementById("status").style.backgroundColor = "#eeeeee";
+			}
+		}
+	}
+	xhttp.open("GET", "http://" + document.getElementById("ip").value + "/readings", true);
+  	xhttp.send();	
+}
+</script>
+<body onload="setInterval(function() { getReadings(); }, 2000);">
+<div id="ampel">
+<h1>RESTful CO2-Ampel</h1>
+<p><form onsubmit="return false;"><span style="color:red;">IP-Address:</span>
+	<input id="ip" type="text" size="18"></form>
+</p>
+<div id="status">
+<p><span id="labels">Temperature:</span><span id="temp">---</span> &#8451;</p>
+<p><span id="labels">Rel. Humidity:</span><span id="hum">---</span> %</p>
+<p><span id="labels">Air Pressure:</span><span id="pres">---</span> hPa</p>
+<p><span id="labels">CO<sub>2</sub> Median:</span><span id="co2">---</span> ppm</p>
+<p><span id="labels">Battery voltage:</span><span id="vbat">---</span> V</p>
+</div>
+</div>
+</body>
+</html>

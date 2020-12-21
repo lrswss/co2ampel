@@ -87,6 +87,9 @@ void loadSettings(T *t, S *s, uint8_t crclen, uint16_t addr, const char* name) {
   char buf[32];
   bool error = false;
 
+  if (!rtcOK)
+    rtc_init();
+
   Serial.printf("Loading %s (%d bytes) from EEPROM...", name, sizeof(*t));
   memset(s, 0, sizeof(*s));
   if (!rtceeprom.eeprom_read(addr, (byte *) s, sizeof(*s))) {
@@ -122,6 +125,9 @@ void loadSettings(T *t, S *s, uint8_t crclen, uint16_t addr, const char* name) {
 template <typename T>
 bool saveSettings(T t, uint16_t addr, const char* name) {
   char buf[32];
+
+  if (!rtcOK)
+    rtc_init();
   
   Serial.printf("Saving %s to EEPROM address 0x%04x...", name, addr);
   if (!rtceeprom.eeprom_write(addr, &t, sizeof(t))) {
@@ -140,6 +146,9 @@ bool saveSettings(T t, uint16_t addr, const char* name) {
 template <typename T>
 bool resetSettings(T t, uint16_t addr, const char* name) {
   char buf[32];
+
+  if (!rtcOK)
+    rtc_init();
   
   Serial.printf("Reset %s...", name);
   if (!rtceeprom.eeprom_write(addr, &t, sizeof(t))) {

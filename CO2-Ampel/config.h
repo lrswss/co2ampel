@@ -11,7 +11,16 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
-#define FIRMWARE_VERSION 100
+#define FIRMWARE_VERSION 101
+
+// choose language for web interface
+//#define LANG_DE
+#define LANG_EN
+
+//
+// All settings except DEBUG options can
+// also be changed in the web interface
+//
 
 // https://www.umweltbundesamt.de/sites/default/files/medien/pdfs/kohlendioxid_2008.pdf 
 // thresholds set according to table 3 on page 1366
@@ -20,7 +29,7 @@
 #define CO2_ALARM_THRESHOLD 2000  // above red blinking
 #define CO2_THRESHOLD_HYSTERESIS 50
 
-// measurement interval for air sensor and
+// measurement interval for CO2 sensor and
 // number of samples used for CO2 median reading
 #define SCD30_INTERVAL_SECS 10
 #define SCD30_NUM_SAMPLES_MEDIAN 6
@@ -34,7 +43,7 @@
 #define LOGGING_INTERVAL_SECS 300
 
 // set credentials to optionally protect settings, 
-// calibration and firmware update in webinterface
+// calibration and firmware update in web interface
 // optionally enable serial debugging messages for settings
 //#define ENABLE_AUTH
 #define SETTINGS_USERNAME "admin"
@@ -51,23 +60,24 @@
 // used for RTC sync (required at least once) and MQTT messages
 //#define ENABLE_WLAN_UPLINK
 #define WIFI_STA_SSID "MyWLAN"
-#define WIFI_STA_PASSWORD "__secret__""
+#define WIFI_STA_PASSWORD "__secret__"
 
 // offline time to save battery (no leading '0')
 //#define ENABLE_NOOP
 #define BEGIN_SLEEP_HOUR 22
 #define END_SLEEP_HOUR 7
 
-// publish reading with MQTT (if local WLAN is preset/available)
+// peridocally publish reading with MQTT
+// if a WiFi uplink is preset/available
 //#define ENABLE_MQTT
 #define MQTT_PUSH_INTERVAL_SECS 60
-#define MQTT_BROKER "10.1.30.39"
+#define MQTT_BROKER "192.168.1.1"
 #define MQTT_TOPIC "co2ampel"
 #define MQTT_PUSH_JSON
 //#define MQTT_USER "ampel"
 //#define MQTT_PASS "__secret__"
 
-// uncomment HAS_LORAWAN_SHIELD to compile support
+// uncomment HAS_LORAWAN_SHIELD to compile in LoRaWAN support
 // recommended shield for a Wemos D1: https://github.com/hallard/WeMos-Lora
 //#define HAS_LORAWAN_SHIELD
 //#define ENABLE_LORAWAN
@@ -88,7 +98,8 @@
 #define LORAWAN_OBSCURE_KEYS
 
 // adjust according to battery voltage divider 
-// (220k from VBAT to A0) on wemos D1 shield
+// (220k from VBAT to A0) on Wemos D1 shield
+// NOTE: cannot be changed in web interface
 #define VBAT_ADJUST 4.205
 
 #endif

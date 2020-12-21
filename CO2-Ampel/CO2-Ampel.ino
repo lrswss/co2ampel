@@ -5,13 +5,15 @@
   Yet another "CO2-Ampel" based on an ESP8266 (Wemos D1 mini) to continuously
   measure CO2 concentration indoor with a SCD30 sensor accompanied by a BME280
   for temperature, humidity and air pressure readings. Current air condition
-  (good, medium, critial, bad) is shown using an array of WS2812 LEDs lit up
-  in green, yellow or red.
+  (good, medium, critical, bad) is shown using a NeoPixel ring with WS2812
+  LEDs illuminating the device in either green, yellow or red.
+
 
   Unlike other devices this one runs on two 18650 LiIon-batteries, offers a
-  sophisticated webinterface for configuration and live sensor readings. Sensor
-  data can be logged to local flash (LittleFS), retrieved RESTful, published
-  using MQTT or transmitted with LoRaWAN if a RFM95 shield is installed.
+  sophisticated webinterface for configuration, ive sensor readings and OTA
+  firmware updates. Sensor data can be logged to local flash (LittleFS),
+  retrieved RESTful, published using MQTT or transmitted with LoRaWAN if a
+  RFM95 shield is installed.
 
 
   Licensed under the Apache License, Version 2.0 (the "License"); you may 
@@ -64,14 +66,16 @@ void setup() {
       blink_leds(ALL_LEDS, RED, 500, 1, false);
       delay(2000);
     }
+  } else {
+    blink_leds(HALF_RING, WHITE, 500, 2, false);
+    delay(1000);
   }
 
   // load general settings from DS3231 EEPROM (24C32)
   loadGeneralSettings();
   
-  // check for power saving NOOP mode (requires valid RTC time!)
-  // in NOOP mode only webserver and mqtt are enabled
-  rtc_init();
+  // check for power saving NOOP mode (requires valid RTC time)
+  // in NOOP mode only webserver and MQTT are enabled (optional)
   checkNOOPTime(settings.beginSleep, settings.endSleep);
 
   // recommended: https://github.com/hallard/WeMos-Lora
@@ -88,13 +92,17 @@ void setup() {
 #endif
 
   loadWifiSettings();
-  if (runmode == RESET) { // reset button will clear wifi settings (credentials!)
+  if (runmode == RESET) {
+    // reset button will clear wifi settings (credentials)
+    // and disable authentication for settings pages
     logMsg("reset button");
+    settings.enableAuth = false;
     resetWifiSettings();
   }
 
   // always start an AP and fire up local webserver with (optional) timeout
-  // use short timeout during intermediate NOOP wakeup unless reset was triggered
+  // to allow access to system settings or we'd be locked out until NOOP
+  // time has finished...
   wifi_hotspot(false);
   webserver_start((co2status == NOOP && runmode != RESET) ? WEBSERVER_TIMEOUT_NOOP : wifiSettings.webserverTimeout);
 
@@ -122,15 +130,13 @@ void setup() {
     rotateLogs();
     Serial.println(F("Setup completed.\n"));
   } else {
-    // sensors are disabled in NOOP mode but webserver needs to be
-    // running for short time to allow access to system settings
-    // or we'd be locked out until NOOP time has finished...
+    // sensors are disabled in NOOP mode
     Serial.print(F("System will power down in "));
     if (runmode != RESET)
       Serial.print(WEBSERVER_TIMEOUT_NOOP);
     else
       Serial.print(wifiSettings.webserverTimeout);
-    Serial.println(F(" secs.\n"));
+    Serial.println(F(" secs...\n"));
   }
 }
 
@@ -214,8 +220,10 @@ void loop() {
       wifi_hotspot(true);
 
     // switch off wifi after webserver timeout unless MQTT push is enabled
-    if (!mqttSettings.enabled && webserver_stop(false) && wifi_uplink(false))
+    if (!mqttSettings.enabled && webserver_stop(false) && wifi_uplink(false)) {
+      stopNTPSync();
       wifi_stop();
+    }
 
     if (co2status == NOOP && !settings.enableNOOP) {
       // if currently active NOOP mode has just been disabled in webui, 

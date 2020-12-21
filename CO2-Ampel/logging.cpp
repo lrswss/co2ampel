@@ -10,11 +10,16 @@
 
 #include "logging.h"
 #include "webserver.h"
-#include "html.h"
 #include "sensors.h"
 #include "utils.h"
 #include "rtc.h"
+#include "config.h"
 
+#ifdef LANG_EN
+#include "html_EN.h"
+#else
+#include "html_DE.h"
+#endif
 
 void mountFS() {
   FSInfo fs_info;

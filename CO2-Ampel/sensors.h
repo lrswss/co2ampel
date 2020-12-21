@@ -24,7 +24,7 @@
 #define SCD30_INTERVAL_MAX_SECS 60 // see CD_AN_SCD30_Low_Power_Mode_D2.pdf
 #define SCD30_WARMUP_SECS 60
 #define SCD30_READING_TIMEOUT 90
-#define CO2_LOWER_BOUND 400
+#define CO2_LOWER_BOUND 350  // https://wiki.seeedstudio.com/Grove-CO2_Sensor/
 
 
 enum sensorStatus {

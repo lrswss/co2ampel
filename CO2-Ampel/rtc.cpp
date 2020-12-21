@@ -99,7 +99,7 @@ void rtc_init() {
   }
   rtc.disable32K();
   rtc_temperature();
-  blink_leds(HALF_RING, GREEN, 100, 2, false);
+  blink_leds(SYSTEM_LEDS, GREEN, 100, 2, true);
   rtcOK = true;
   delay(1000);
 }
@@ -180,7 +180,6 @@ bool startNTPSync() {
   timeClient.forceUpdate(); // takes a while
   if (timeClient.getEpochTime() > 1000) {
     Serial.println(F("OK."));
-    blink_leds(HALF_RING, GREEN, 100, 2, false);
     rtc.adjust(DateTime(timeClient.getEpochTime()));
     logMsg("ntp sync");
     delay(1000);

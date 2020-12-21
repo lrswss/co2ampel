@@ -40,7 +40,7 @@ typedef struct {
 
 extern mqttprefs_t mqttSettings;
 
-void mqtt_init();
+bool mqtt_init();
 void mqtt_stop();
 bool mqtt_send(uint16_t timeoutMillis);
 void loadMQTTSettings();

@@ -14,11 +14,12 @@
 #include "sensors.h"
 #include "logging.h"
 #include "rtc.h"
+#include "led.h"
 #include "config.h"
 
 mqttprefs_t mqttSettings, mqttSettingsDefault;
 
-static char clientname[32];
+static char clientname[64];
 static bool mqttInited = false;
 
 WiFiClient wifi;
@@ -73,7 +74,8 @@ static bool mqttJSON() {
   StaticJsonDocument<128> JSON;
   char buf[128];
 
-  if (co2status <= ALARM) {
+  JSON["device"] = systemID();
+  if (co2status > WARMUP && co2status <= ALARM) {
     JSON["co2median"] = scd30_co2ppm;
     JSON["temperature"] = bme280_temperature;
     if (hasBME280)
@@ -100,32 +102,31 @@ static bool mqttJSON() {
 
 // publish all sensor readings on seperate subtopics
 static bool mqttSingle() {
-  static char topicStr[128];
-  char buf[128];
+  static char topicStr[96];
   char valueStr[8];
   uint8_t count = 0;
 
-  Serial.printf("MQTT: publish readings to %s/%s...",
-      mqttSettings.broker, mqttSettings.topic);
+  Serial.printf("MQTT: publish readings to %s/%s/%s...",
+      mqttSettings.broker, mqttSettings.topic, systemID().c_str());
 
-  if (co2status <= ALARM) {
+  if (co2status > WARMUP && co2status <= ALARM) {
     memset(topicStr, 0, sizeof(topicStr));
     itoa(scd30_co2ppm, valueStr, 10);
-    sprintf(topicStr, "%s/co2median", mqttSettings.topic);
+    sprintf(topicStr, "%s/%s/co2median", mqttSettings.topic, systemID().c_str());
     if (mqtt.publish(topicStr, valueStr))
       count++;
 
     delay(MQTT_PUSH_DELAY_MS);
     memset(topicStr, 0, sizeof(topicStr));
     dtostrf(bme280_temperature, 5, 2, valueStr);
-    sprintf(topicStr, "%s/temperature", mqttSettings.topic);
+    sprintf(topicStr, "%s/%s/temperature", mqttSettings.topic, systemID().c_str());
     if (mqtt.publish(topicStr, removeSpaces(valueStr)))
       count++;
 
     delay(MQTT_PUSH_DELAY_MS);
     memset(topicStr, 0, sizeof(topicStr));
     itoa(bme280_pressure, valueStr, 10);
-    sprintf(topicStr, "%s/pressure", mqttSettings.topic);
+    sprintf(topicStr, "%s/%s/pressure", mqttSettings.topic, systemID().c_str());
     if (mqtt.publish(topicStr, removeSpaces(valueStr)))
       count++;
 
@@ -133,7 +134,7 @@ static bool mqttSingle() {
       delay(MQTT_PUSH_DELAY_MS);
       memset(topicStr, 0, sizeof(topicStr));
       itoa(bme280_humidity, valueStr, 10);
-      sprintf(topicStr, "%s/hum", mqttSettings.topic);
+      sprintf(topicStr, "%s/%s/hum", mqttSettings.topic, systemID().c_str());
       if (mqtt.publish(topicStr, valueStr))
         count++;
     }
@@ -142,18 +143,19 @@ static bool mqttSingle() {
   delay(MQTT_PUSH_DELAY_MS);
   memset(topicStr, 0, sizeof(topicStr));
   dtostrf(getVBAT(), 4, 2, valueStr);
-  sprintf(topicStr, "%s/vbat", mqttSettings.topic);
+  sprintf(topicStr, "%s/%s/vbat", mqttSettings.topic, systemID().c_str());
   if (mqtt.publish(topicStr, removeSpaces(valueStr)))
     count++;
 
   delay(MQTT_PUSH_DELAY_MS); 
   memset(topicStr, 0, sizeof(topicStr));
   itoa(co2status, valueStr, 10);
-  sprintf(topicStr, "%s/status",mqttSettings.topic);
+  sprintf(topicStr, "%s/%s/status", mqttSettings.topic, systemID().c_str());
   if (mqtt.publish(topicStr, statusNames[co2status]))
     count++;
 
-  if (count == 6 || (count == 5 && !hasBME280) || (co2status > ALARM && count == 2)) {
+  if (count == 6 || (count == 5 && !hasBME280) ||
+    ((co2status > ALARM  || co2status <= WARMUP ) && count == 2)) {
     Serial.println(F("OK."));
     return true;
   } else {
@@ -164,24 +166,27 @@ static bool mqttSingle() {
 }
 
 
-void mqtt_init() {
+bool mqtt_init() {
   String name;
 
   if (mqttInited)
-    return;
+    return true;
 
   if (!wifi_uplink(false)) {
     Serial.println(F("MQTT: failed to start, no WiFi uplink."));
-    return;
+    return false;
   }
   
   if (mqttSettings.enabled && strlen(mqttSettings.broker) >= 4) {
     Serial.println(F("MQTT started."));
     mqtt.setServer(mqttSettings.broker, MQTT_PORT);
-    name = String(MQTT_CLIENT_NAME).substring(0,24) + "-" + systemID();
+    name = String(MQTT_CLIENT_NAME).substring(0,48) + "-" + systemID() + "-" + String(random(0xffff), HEX);
     sprintf(clientname, name.c_str(), name.length());
+    blink_leds(SYSTEM_LEDS, ORANGE, 100, 2, true);
     mqttInited = true;
   }
+  delay(1000);
+  return mqttInited;
 }
 
 

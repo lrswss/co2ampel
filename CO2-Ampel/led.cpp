@@ -11,17 +11,14 @@
 #include <Arduino.h>
 #include "led.h"
 
-Adafruit_NeoPixel neopixels = Adafruit_NeoPixel(NUM_PIXELS, 0, NEO_GRB + NEO_KHZ800);
-static uint32_t currentState[NUM_PIXELS];
-static uint32_t savedState[NUM_PIXELS];
-
+static CRGB currentState[NUM_PIXELS];
+static CRGB savedState[NUM_PIXELS];
 
 // setup WS2812 LEDs (all off)
 void led_init() {
   Serial.printf("Setup %d WS2812 LEDs...\n", NUM_PIXELS);
-  neopixels.begin();
+  FastLED.addLeds<NEOPIXEL, NEOPIXEL_DATA_PIN>(currentState, NUM_PIXELS);
   clear_leds(ALL_LEDS);
-  blink_leds(SYSTEM_LEDS, GREEN, 50, 2, false);
 }
 
 
@@ -39,30 +36,24 @@ void save_leds() {
 
 // restore previous LED state
 void restore_leds() {
-  for (uint8_t i = 0; i < NUM_PIXELS; i++) {
-    neopixels.setPixelColor(i, savedState[i]);
-  }
-  neopixels.show();
+  memcpy(currentState, savedState, sizeof(currentState));
+  FastLED.show();
 }
 
 
 // set selected LEDs to given color
-// clear alle rings pixel before setting subset of them
+// clear all pixels before setting subset of them
 void set_leds(PixelBits pixels, uint32_t color) {
   uint16_t pixel = 1; 
 
   for (uint8_t i = 0; i < NUM_PIXELS; i++) {
-    if ((pixels & QUARTER_RING || pixels & HALF_RING) && (pixel & FULL_RING)) {
+    if ((pixels & QUARTER_RING || pixels & HALF_RING) && (pixel & FULL_RING))
       currentState[i] = 0;
-      neopixels.setPixelColor(i, 0);
-    }
-    if (pixel & pixels) {
+    if (pixel & pixels)
       currentState[i] = color;
-      neopixels.setPixelColor(i, color);
-    }
     pixel = pixel << 1;    
   } 
-  neopixels.show();
+  FastLED.show();
 }
 
 
@@ -78,7 +69,7 @@ void timer_leds(PixelBits pixels, uint32_t color, uint16_t timeout_ms, bool rest
 }
 
 
-void toogle_leds(PixelBits pixels, uint32_t color) {
+void toggle_leds(PixelBits pixels, uint32_t color) {
   static bool ledOn = false;
   if (!ledOn) {
     set_leds(pixels, color);
@@ -94,10 +85,10 @@ void toogle_leds(PixelBits pixels, uint32_t color) {
 void blink_leds(PixelBits pixels, uint32_t color, uint16_t pause, uint8_t blinks, bool restore) {
   for (uint8_t i = 0; i < blinks; i++) {
     set_leds(pixels, color);
-    neopixels.show();
+    FastLED.show();
     delay(pause);
     clear_leds(pixels);
-    neopixels.show();
+    FastLED.show();
     delay(pause);
   }
   if (restore)
