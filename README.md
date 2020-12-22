@@ -1,8 +1,9 @@
 ## CO2-Ampel
 
 <p align="center">
-<img src="pics/co2ampel.png" alt="CO2Ampel" width="300" hspace="10" vspace="10">
-<img src="pics/co2ampel_without_hood.png" alt="CO2-Ampel disassembled" width="300" hspace="10" vspace="10">
+<img src="pics/co2ampel.png" alt="CO2Ampel" width="220" hspace="5" vspace="10">
+<img src="pics/co2ampel_without_hood.png" alt="CO2-Ampel disassembled (front)" width="220" hspace="5" vspace="10">
+<img src="pics/co2ampel_batteries.png" alt="CO2-Ampel disassembled (back)" width="220" hspace="5" vspace="10">
 </p>
 
 Yet another CO<sub>2</sub>-Ampel based on an ESP8266 (Wemos D1 mini) to continuously
@@ -21,7 +22,7 @@ is installed.
 ## Hardware components
 
 * [SCD30 CO2 sensor](https://www.sensirion.com/en/environmental-sensors/carbon-dioxide-sensors/carbon-dioxide-sensors-CO<sub>2</sub>/)
-* [BME280 break-out board](https://www.aliexpress.com/w/wholesale-Breakout-board-bme280.html)
+* [BME280 break-out board](https://www.aliexpress.com/wholesale?SearchText=bme280&opensearch=true)
 * [Wemos D1 mini board](https://escapequotes.net/esp8266-wemos-d1-mini-pins-and-diagram/)
 * [Wemos Battery Shield](https://www.wemos.cc/en/latest/d1_mini_shield/battery.html)
 * [Wemos ProtoBoard Shield](https://www.wemos.cc/en/latest/d1_mini_shield/protoboard.html) or
@@ -38,13 +39,13 @@ is installed.
 Looking around for a suitable housing for the CO<sub>2</sub>-Ampel we (my son and I)
 spontaneously choose [this](https://www.ovomaltine.de/produkte/ovomaltine-pulver-dose)
 because it was almost empty, pretty robust and seemed perfect in respect
-to shape and size.
+to shape and size. :wink:
 
 To help stack all components inside the translucent plastic tin I designed
 a  simple [3D printed inner frame](3d-parts/inner-frame.png) which has a
 place for all components and is  glued into the orange lid. The SCD30 and
-BME280 sensors are placed into a [3D printed sensor-mount](3d-parts/sensor-mount.png)
-glued on top of the frame **after** the NeoPixel ring has been screwed
+BME280 sensors are placed into a seperate [3D printed sensor-mount](3d-parts/sensor-mount.png)
+which is glued on top of the frame **after** the NeoPixel ring has been screwed
 onto the frame. Air ventilation is achieved by a [3D printed grille](3d-parts/ventilation_grille.png)
 pressed into a 40 mm hole cut into the rather thick bottom of the
 plastic tin.
@@ -62,11 +63,11 @@ with two more 4-pin headers to connect the three I2C modules (SCD30,
 BME280, DS3231). Alternatively you can replace the LoRa shield with a
 Wemos ProtoBoard shield and solder the three 4-pin headers in parallel
 to D1 (SCL), D2 (SDA), 3.3V and GND on top of the board. If you're using
-a ProtoBoard you also need two 4.7k pull-up resistors from D1 and D2
+a ProtoBoard you also have to add two 4.7k pull-up resistors from D1 and D2
 to 3.3V or I2C communication will proably fail.
 
 The SCD30 CO<sub>2</sub> sensor, BME280 break-out board and DS3231 RTC are each
-soldered to a 4-pin Dupont cable which in turn connect to the 4-pin I2C
+soldered to 4-pin Dupont cables which in turn connect to the 4-pin I2C
 header on either the LoRa or a Wemos ProtoBoard shield. Double check
 that all SCL pins are connected to D1 and all SDA pins to D2. The Vcc
 input of all I2C modules **must** be connected to 3.3V of the Wemos stack
@@ -102,7 +103,7 @@ on the shield to the A0 pin to enable voltage monitoring.
 
 ## Compiling the firmware
 
-First adjust settings in `config.h` according to your needs and hardware
+First adjust settings in `config.h` according to your needs (language) and hardware
 setup. For an initial setup you should probably leave the default setttings
 untouched since most of them can be changed anyway using the extensive
 web interface and are then stored in the EEPROM of the DS3231 RTC module.
@@ -116,7 +117,8 @@ Before trying to compile and flash the sketch to your Wemos D1 mini make
 sure that you [added support for ESP8266 based boards](https://github.com/esp8266/Arduino)
 and the following libraries have been installed. Don't be too intimidated
 by the long list, the [Arduino IDE library manager](https://www.arduino.cc/en/Guide/Libraries)
-will give you a hand.
+will give you a hand. Make sure that you set the flash size to `4MB (FS:2MB OTA:~1019k)`
+to spare flash for the logging. To save battery set the CPU-Frequency to `80 MHz`.
 
 * [EPS8266Wifi](https://github.com/esp8266/Arduino/tree/master/libraries/ESP8266WiFi)
 * [ESP8266WebServer](https://github.com/esp8266/Arduino/tree/master/libraries/ESP8266WebServer)
@@ -135,7 +137,7 @@ will give you a hand.
 * [Time](https://github.com/PaulStoffregen/Time)
 * [Timezone](https://github.com/JChristensen/Timezone)
 
-## Intial startup
+## Initial startup
 
 After flashing the firmware onto a hopefully working hardware setup you
 should enable the serial monitor in the Arduino IDE to closely monitor
@@ -147,7 +149,7 @@ green flashes showing a successful initialization of the RTC module. An
 error at this stage will result in continous red flashing...time to check
 all connections.
 
-If you compiled in support for the optional LoRaWAN shield and also enabled
+If you compiled in support for the optional LoRa shield and also enabled
 OTAA by defining `LORAWAN_USEOTAA` in `config.h` the CO<sub>2</sub>-Ampel will now
 try to connect to a LoRaWAN gateway with a timeout of 10 seconds. During
 OTAA it will flash magenta followed be two green flashes if the network
@@ -157,7 +159,7 @@ and reused on next power up. An OTAA failure will trigger two red flashes.
 Next WiFi is turned on (two blue flashes), a local access point is fired
 up (two green flashes) and a webserver is started to further configure
 the devices and show current sensor readings. If you enabled the optional
-WiFi uplink in `config.h` the few LEDs will now turn blue while trying
+WiFi uplink in `config.h` a few LEDs will now turn blue while trying
 to connect to the WiFi network specified with `WIFI_STA_SSID` and
 `WIFI_STA_PASSWORD`. On success you'll see two green flashes otherwise
 red. You need to connect the CO<sub>2</sub>-Ampel to a local WiFi (with internet
@@ -175,8 +177,9 @@ will start indicated by a continous green (good), yellow (medium) or
 red (bad) illumination. If you start to see two repeating red flashes
 the air condition is critical...time to open the windows!
 
-Continous four red flashes indicate repeated errors while trying to get
-valid CO<sub>2</sub> readings from the SCD30 sensor.
+Continous four red flashes indicate repeated errors while trying to
+get valid CO<sub>2</sub> readings from the SCD30 sensor. Turning the
+CO<sub>2</sub>-Ampel off for a few seconds will usually fix this.
 
 ## Adjust device settings
 
@@ -184,24 +187,24 @@ valid CO<sub>2</sub> readings from the SCD30 sensor.
 <img src="pics/web_main_page.png" width="300" vspace="10">
 </p>
 
-During the initial setup phase the CO<sub>2</sub>-Ampel will start an WiFi access
-point with this SSID `CO<sub>2</sub>-Ampel` followed by six alphanumeric characters
-derived from the Wemos D1 mini MAC address. You can connect to the access
+During the initial setup phase the CO<sub>2</sub>-Ampel will start a WiFi access
+point with the SSID `CO2-Ampel` followed by six alphanumeric characters
+derived from the Wemos D1 mini's MAC address. You can connect to the access
 point within a timeout initilially set to 10 minutes using the password
 specified by `WIFI_AP_PASSWORD` (default is `__mysecret__`). Then point
 your favorite browser to `http://192.168.4.1` and you'll be presented an
 extensive web interface to further configure your CO<sub>2</sub>-Ampel.
 Its language is preset at compile time by either defining `LANG_DE` or
-`LAND_EN` in `config.h`. Settings are saved in the EEPROM of the RTC module
-and will thus survive a power off.
+`LAND_EN` in `config.h`. All settings are saved in the EEPROM of the RTC
+module and will thus survive a power off.
 
 ## CO2 sensor calibration
 
 Since the SCD30 CO<sub>2</sub> sensor has to be exposed to fresh air for at least
-1 hour every day to make its automatic self-calibration (ASC) work as
-expected, it has been disabled for the CO<sub>2</sub>-Ampel. The SCD30 is pre-calibrated
-at the factory, but the accuracy (approx. +- 60 ppm, drift approx. 80 ppm
-/ year) may change e.g. due to mechanical effects during transport.
+one hour every day to make its automatic self-calibration (ASC) work as
+expected, it has been disabled in this setup. The SCD30 is pre-calibrated
+at the factory, but the accuracy (approx. +- 60 ppm, drift approx. 80 ppm/year)
+may change e.g. due to mechanical effects during transport.
 
 However the CO<sub>2</sub> sensor can be manually (re)calibrated in fresh air (outdoor
 air is actually between 350 ppm and 450 ppm in normal geographic locations)
@@ -211,10 +214,10 @@ the calibration process (CO<sub>2</sub>-Ampel will switch to cyan color) and kee
 eye on the web interface. The fully automated calibration might take a few
 minutes since the CO<sub>2</sub>-Ampel now continously monitors the standard deviation
 of the CO<sub>2</sub> readings. It will only set a new reference value (410 ppm) if
-the readingsare more or less stable. This value can be change in `sensor.h`
-with `SCD30_CO<sub>2</sub>_CALIBRATION_VALUE`.
+the readings are more or less stable. This value can be changed in `sensor.h`
+with `SCD30_CO2_CALIBRATION_VALUE`.
 
-If CO<sub>2</sub> readings still keep floating after a timeout of 5 minutes the
+If CO<sub>2</sub> readings still keep floating within a timeout of 5 minutes the
 calibration is eventually aborted, keeping the previous reference value.
 The CO<sub>2</sub>-Ampel will flash red for 15 seconds to indicate calibration failure.
 
@@ -224,7 +227,7 @@ Intial offset is set to 1.9 in `sensors.h` with `SCD30_TEMP_OFFSET`.
 
 ## Disclaimer
 
-Even though this device consists of the same components as professional
+Even though this device consists more or less of the same components as professional
 systems it does not have any certification. It's a home made product for
 educational purposes and thus cannot be used as medical device or serve
 as personal protective equipment in the sense of any legislation.
