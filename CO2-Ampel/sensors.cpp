@@ -118,7 +118,7 @@ uint16_t bme280_init() {
       }
   }
   bme280Init = true;
-  blink_leds(SYSTEM_LEDS, GREEN, 100, 2, true);
+  blink_leds(SYSTEM_LEDS, GREEN, 100, 2, false);
   delay(1000);
 }
 
@@ -183,7 +183,7 @@ void scd30_init(uint16_t pressure) {
     logMsg(buf);
   }
   scd30Init = true;
-  blink_leds(SYSTEM_LEDS, GREEN, 100, 2, true);
+  blink_leds(SYSTEM_LEDS, GREEN, 100, 2, false);
   delay(1000);
 }
 
@@ -250,6 +250,7 @@ bool scd30_readings(bool reset) {
         Serial.print(scd30_humidity, 1);
         Serial.println(F("%)"));
       } else {
+        save_leds();
         blink_leds(SYSTEM_LEDS, RED, 100, 2, true);
         Serial.println(F("SCD30: invalid CO2 reading"));
         noCO2Reading++;

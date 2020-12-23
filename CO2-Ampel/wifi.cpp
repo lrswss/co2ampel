@@ -18,7 +18,7 @@ static bool wifiActive = false;
 static bool wifiAP = false;
 static bool wifiUplink = false;
 static bool mdnsStarted = true;
-wifiprefs_t wifiSettings, wifiSettingsDefault;
+wifiprefs_t wifiSettings;
 
 
 static bool printWifiSettings(wifiprefs_t *s) {
@@ -57,6 +57,7 @@ static void setDefaults(wifiprefs_t *s) {
   strncpy(s->wifiStaPassword, WIFI_STA_PASSWORD, sizeof(s->wifiStaPassword));
 #endif
 #endif
+  s->crc = crc16((uint8_t *) s, offsetof(wifiprefs_t, crc));
 }
 
 
@@ -97,6 +98,7 @@ bool wifi_start_ap(const char* ssid, const char* pass) {
   } else if (!wifiActive && !wifi_init())
     return false;
 
+  save_leds();
   sprintf(ap_ssid, "%s-%s", ssid, systemID().c_str());
   if (WiFi.softAP(ap_ssid, pass)) {
     Serial.printf("WiFi: local AP with SSID %s, IP %s started.\n",
@@ -109,7 +111,7 @@ bool wifi_start_ap(const char* ssid, const char* pass) {
   } else {
     Serial.println(F("WiFi: failed to start local AP!"));
     logMsg("access point failed");
-    blink_leds(HALF_RING, RED, 250, 2, false);
+    blink_leds(SYSTEM_LEDS, RED, 250, 2, true);
   }
   delay(1000);
   return wifiAP;
@@ -132,7 +134,7 @@ static bool wifi_start_sta(const char* ssid, const char* pass, uint8_t timeoutSe
   Serial.printf("WiFi: connecting to SSID %s...", ssid);
   WiFi.begin(ssid, pass);
   save_leds();
-  set_leds(SYSTEM_LED1, BLUE);
+  set_leds(SYSTEM_LEDS, BLUE);
   while (WiFi.status() != WL_CONNECTED && (ticks/2) <= timeoutSecs) {
     Serial.print(".");
     Serial.flush();
@@ -146,13 +148,13 @@ static bool wifi_start_sta(const char* ssid, const char* pass, uint8_t timeoutSe
     Serial.printf("with IP %s.\n", WiFi.localIP().toString().c_str());
     sprintf(buf, "connect ssid %s, ip %s", ssid, WiFi.localIP().toString().c_str());
     logMsg(buf);
-    blink_leds(SYSTEM_LED1, GREEN, 100, 2, true);
+    blink_leds(SYSTEM_LEDS, GREEN, 100, 2, true);
     wifi_mdns();
     wifiSettings.enableWLANUplink = true;
     wifiUplink = true;
   } else {
     Serial.println(F("failed!"));
-    blink_leds(HALF_RING, RED, 250, 2, false);
+    blink_leds(SYSTEM_LEDS, RED, 250, 2, true);
     wifiUplink = false;
   }
   delay(1000);
@@ -206,22 +208,25 @@ void wifi_stop() {
 
 void loadWifiSettings() {
   wifiprefs_t buf;
-  
+
   setDefaults(&wifiSettings);  // set struct with defaults values from config.h
-  memcpy((void*)&wifiSettingsDefault, &wifiSettings, sizeof(wifiSettings)); // keep a copy for reset
   loadSettings(&wifiSettings, &buf, offsetof(wifiprefs_t, crc), EEPROM_WIFI_PREFS_ADDR, "WiFi settings");
   printWifiSettings(&wifiSettings);
 }
 
 
 bool saveWifiSettings() {
-  wifiSettings.crc = crc16((uint8_t *) &wifiSettings, offsetof(wifiprefs_t, crc));
-  return saveSettings(wifiSettings, EEPROM_WIFI_PREFS_ADDR, "WiFi settings") &&   printWifiSettings(&wifiSettings);
+  if (wifiSettings.crc) { // use an existing crc as flag for a valid settings struct
+    wifiSettings.crc = crc16((uint8_t *) &wifiSettings, offsetof(wifiprefs_t, crc));
+    return saveSettings(wifiSettings, EEPROM_WIFI_PREFS_ADDR, "WiFi settings") && printWifiSettings(&wifiSettings);
+  }
+  return false;
 }
 
 
 bool resetWifiSettings() {
-  memcpy((void*)&wifiSettings, &wifiSettingsDefault, sizeof(wifiSettings)); // use copy with defaults
-  return resetSettings(wifiSettings, EEPROM_WIFI_PREFS_ADDR, "WiFi settings") && printWifiSettings(&wifiSettings);
-
+  Serial.println(F("Reset WiFi settings."));
+  logMsg("reset WiFi settings");
+  setDefaults(&wifiSettings);
+  return saveSettings(wifiSettings, EEPROM_WIFI_PREFS_ADDR, "WiFi settings") && printWifiSettings(&wifiSettings);
 }

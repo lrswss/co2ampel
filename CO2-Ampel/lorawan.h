@@ -64,7 +64,7 @@ typedef struct {
   byte appsKey[16];
   byte appEui[8];
   byte appKey[16];
-  uint16_t crc;
+  uint16_t crc = 0;
 } loraprefs_t;
 
 extern osjob_t lorawanjob;

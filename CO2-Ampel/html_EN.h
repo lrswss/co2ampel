@@ -101,8 +101,6 @@ function getSetup() {
       arr = this.responseText.split(',');
       if (arr[0] == "1") { // LoRaWAN enabled?    
         document.getElementById("lorawan_modus").style.display = "table-row";
-        document.getElementById("lorawan_addr").style.display = "table-row";
-        document.getElementById("lorawan_seqnoup").style.display = "table-row";
       }
       if (arr[1] == "1") { // Logging enabled?    
         document.getElementById("logfile_download").style.display = "block";
@@ -118,7 +116,7 @@ function getReadings() {
   var res;
   var timeout;
   var height = 0;
-  var otaa = false;
+  var lorawanMode = -1;
 
   if (suspendReadings)
     return;
@@ -143,7 +141,7 @@ function getReadings() {
       document.getElementById("WarmupTimeout").innerHTML = warmupTimeout;
       document.getElementById("LoRaDevAddr").innerHTML = res.loraDevAddr;
       document.getElementById("LoRaSeqnoUp").innerHTML = res.loraSeqnoUp;
-      otaa = (res.otaa == "1" ? true : false);
+      lorawanMode = Number(res.otaa);
 
       if (calibrationInProgress || calibrationTimeout > 0) {
         if (co2status != 6) {  // calibration ended
@@ -210,10 +208,16 @@ function getReadings() {
         document.getElementById("VBatDisplay").style = "font-weight:normal;color:black";
       }
 
-      if (otaa) {
+      if (lorawanMode > -1) {
+        document.getElementById("lorawan_addr").style.display = "table-row";
+        document.getElementById("lorawan_seqnoup").style.display = "table-row";
+      }
+      if (lorawanMode > 0) {
         document.getElementById("LoRaMode").innerHTML = "OTAA"
-      } else {
+      } else if (!lorawanMode) {
         document.getElementById("LoRaMode").innerHTML = "ABP";
+      } else {
+        document.getElementById("LoRaMode").innerHTML = "Off";
       }
     }
   };
@@ -270,7 +274,7 @@ function initPage() {
 
 const char FOOTER_html[] PROGMEM = R"=====(
 <div class="footer"><hr/>
-<p style="float:left;margin-top:-2px"><a href="https://github.com/lrswss/co2ampel">Firmware __FIRMWARE__</a></p>
+<p style="float:left;margin-top:-2px"><a href="https://github.com/lrswss/co2ampel" title="build on __BUILD__">Firmware __FIRMWARE__</a></p>
 <p style="float:right;margin-top:-2px"><a href="mailto:software@bytebox.org">&copy; 2020 Lars Wessels</a></p>
 <div style="clear:both;"></div>
 </div>

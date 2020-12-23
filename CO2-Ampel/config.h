@@ -11,7 +11,7 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
-#define FIRMWARE_VERSION 101
+#define FIRMWARE_VERSION 102
 
 // choose language for web interface
 //#define LANG_DE

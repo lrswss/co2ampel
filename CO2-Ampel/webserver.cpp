@@ -82,9 +82,9 @@ static void updateUI() {
   }
 #endif
 #ifdef HAS_LORAWAN_SHIELD
-  JSON["otaa"] = int(lorawanSettings.useOTAA);
+  JSON["otaa"] = lorawanSettings.enabled ? int(lorawanSettings.useOTAA) : -1;
 #else
-  JSON["otaa"] = int(0);
+  JSON["otaa"] = -1;
 #endif
   serializeJson(JSON, reply);
   webserver.send(200, F("application/json"), reply);
@@ -129,6 +129,7 @@ void webserver_start(uint16_t timeout) {
     html.replace("__SYSTEMID__", systemID());
     html += FPSTR(FOOTER_html);
     html.replace("__FIRMWARE__", String(FIRMWARE_VERSION));
+    html.replace("__BUILD__", String(__DATE__)+" "+String(__TIME__));
     webserver.send(200, "text/html", html);
     webserverRequestMillis = millis();
   });
@@ -154,6 +155,7 @@ void webserver_start(uint16_t timeout) {
     html += FPSTR(LOGS_FOOTER_html);
     html += FPSTR(FOOTER_html);
     html.replace("__FIRMWARE__", String(FIRMWARE_VERSION));
+    html.replace("__BUILD__", String(__DATE__)+" "+String(__TIME__));
     webserver.send(200, "text/html", html);
     Serial.println(F("Show log files."));
     webserverRequestMillis = millis();
@@ -166,6 +168,7 @@ void webserver_start(uint16_t timeout) {
     html += FPSTR(UPDATE_html);
     html += FPSTR(FOOTER_html);
     html.replace("__FIRMWARE__", String(FIRMWARE_VERSION));
+    html.replace("__BUILD__", String(__DATE__)+" "+String(__TIME__));
     html.replace("__DISPLAY__", "display:none;");
     webserver.send(200, "text/html", html);
     Serial.println(F("Show update page."));
@@ -208,6 +211,7 @@ void webserver_start(uint16_t timeout) {
     }
     html += FPSTR(FOOTER_html);
     html.replace("__FIRMWARE__", String(FIRMWARE_VERSION));
+    html.replace("__BUILD__", String(__DATE__)+" "+String(__TIME__));
     webserver.send(200, "text/html", html);
   }, []() {
     HTTPUpload& upload = webserver.upload();
@@ -299,7 +303,8 @@ void webserver_start(uint16_t timeout) {
     html += FPSTR(HEADER_html);
     html += FPSTR(SETTINGS_html);
     html += FPSTR(FOOTER_html);
-    html.replace("__FIRMWARE__", String(FIRMWARE_VERSION));    
+    html.replace("__FIRMWARE__", String(FIRMWARE_VERSION));
+    html.replace("__BUILD__", String(__DATE__)+" "+String(__TIME__));
     html.replace("__CO2_MEDIUM__", String(settings.co2MediumThreshold));
     html.replace("__CO2_HIGH__", String(settings.co2HighThreshold));
     html.replace("__CO2_ALARM__", String(settings.co2AlarmThreshold));
@@ -410,6 +415,7 @@ void webserver_start(uint16_t timeout) {
     html += FPSTR(NETWORK_html);
     html += FPSTR(FOOTER_html);
     html.replace("__FIRMWARE__", String(FIRMWARE_VERSION));
+    html.replace("__BUILD__", String(__DATE__)+" "+String(__TIME__));
     html.replace("__APPASSWORD__", String(wifiSettings.wifiApPassword));
     html.replace("__WEBTIMEOUT__", String(wifiSettings.webserverTimeout));
     html.replace("__WEBTIMEOUTMIN__", String(WEBSERVER_TIMEOUT_MIN_SECS));
@@ -515,6 +521,7 @@ void webserver_start(uint16_t timeout) {
     html += FPSTR(LORAWAN_html);
     html += FPSTR(FOOTER_html);
     html.replace("__FIRMWARE__", String(FIRMWARE_VERSION));
+    html.replace("__BUILD__", String(__DATE__)+" "+String(__TIME__));
 
     os_getDevEui(deveui);
     array2string(deveui, 8, str, true);

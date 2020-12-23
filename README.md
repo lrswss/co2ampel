@@ -181,6 +181,9 @@ Continous four red flashes indicate repeated errors while trying to
 get valid CO<sub>2</sub> readings from the SCD30 sensor. Turning the
 CO<sub>2</sub>-Ampel off for a few seconds will usually fix this.
 
+If the reset button on the Wemos D1 mini is pressed all settings are
+reset to their default values as set in `config.h` at compile time.
+
 ## Adjust device settings
 
 <p align="center">

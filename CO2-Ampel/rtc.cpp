@@ -25,7 +25,7 @@ TimeChangeRule CET = {"CET ", Last, Sun, Oct, 3, 60};
 Timezone CE(CEST, CET);  // Frankfurt, Paris
 
 bool rtcOK = false;
-sysprefs_t settings, settingsDefault;
+sysprefs_t settings;
 uEEPROMLib rtceeprom(0x57);
 
 
@@ -60,6 +60,7 @@ static void setDefault(sysprefs_t *s) {
   strncpy(s->authUsername, SETTINGS_USERNAME, sizeof(s->authUsername));
   strncpy(s->authPassword, SETTINGS_PASSWORD, sizeof(s->authPassword));
 #endif
+  s->crc = crc16((uint8_t *) s, offsetof(sysprefs_t, crc));
 }
 
 
@@ -99,14 +100,14 @@ void rtc_init() {
   }
   rtc.disable32K();
   rtc_temperature();
-  blink_leds(SYSTEM_LEDS, GREEN, 100, 2, true);
+  blink_leds(SYSTEM_LEDS, GREEN, 100, 2, false);
   rtcOK = true;
   delay(1000);
 }
 
 
 void rtc_temperature() {
-  Serial.print(F("DS3231: temperature("));
+  Serial.print(F("DS3231: temp("));
   Serial.print(rtc.getTemperature(), 1);
   Serial.println("C)");
 }
@@ -201,7 +202,6 @@ void loadGeneralSettings() {
   sysprefs_t buf;
   
   setDefault(&settings);  // set struct with defaults values from config.h
-  memcpy((void*)&settingsDefault, &settings, sizeof(settings)); // keep a copy for reset
   loadSettings(&settings, &buf, offsetof(sysprefs_t, crc), EEPROM_SYSTEM_PREFS_ADDR, "general settings");
   printGeneralSettings(&settings);
 }
@@ -209,13 +209,18 @@ void loadGeneralSettings() {
 
 // store general settings in DS3231 EEPROM
 bool saveGeneralSettings() {
-  settings.crc = crc16((uint8_t *) &settings, offsetof(sysprefs_t, crc));
-  return saveSettings(settings, EEPROM_SYSTEM_PREFS_ADDR, "general settings") && printGeneralSettings(&settings);
+  if (settings.crc) { // use an existing crc as flag for a valid settings struct
+    settings.crc = crc16((uint8_t *) &settings, offsetof(sysprefs_t, crc)); // to reflect changes (web ui)
+    return saveSettings(settings, EEPROM_SYSTEM_PREFS_ADDR, "general settings") && printGeneralSettings(&settings);
+  }
+  return false;
 }
 
 
-// reset general settings to default values and store them to EEPROM
+// reset general settings to default values and store them in EEPROM
 bool resetGeneralSettings() {
-  memcpy((void*)&settings, &settingsDefault, sizeof(settings)); // use copy with defaults
-  return resetSettings(settings, EEPROM_SYSTEM_PREFS_ADDR, "general settings") && printGeneralSettings(&settings);
+  Serial.println(F("Reset general settings."));
+  logMsg("reset general settings");
+  setDefault(&settings);
+  return saveSettings(settings, EEPROM_SYSTEM_PREFS_ADDR, "general settings") && printGeneralSettings(&settings);
 }

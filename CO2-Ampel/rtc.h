@@ -63,7 +63,7 @@ typedef struct {
   bool enableLogging;
   uint16_t loggingInterval;
   uint16_t altitude;
-  uint16_t crc;
+  uint16_t crc = 0;
 } sysprefs_t;
 
 extern sysprefs_t settings;
@@ -132,27 +132,6 @@ bool saveSettings(T t, uint16_t addr, const char* name) {
   Serial.printf("Saving %s to EEPROM address 0x%04x...", name, addr);
   if (!rtceeprom.eeprom_write(addr, &t, sizeof(t))) {
     sprintf(buf, "save %s failed", name);
-    logMsg(buf);
-    Serial.println(F("failed!"));
-    return false;
-  } else {
-    Serial.println(F("OK."));
-    return true;
-  }
-}
-
-
-// template to reset struct with settings in use and stored in EEPROM
-template <typename T>
-bool resetSettings(T t, uint16_t addr, const char* name) {
-  char buf[32];
-
-  if (!rtcOK)
-    rtc_init();
-  
-  Serial.printf("Reset %s...", name);
-  if (!rtceeprom.eeprom_write(addr, &t, sizeof(t))) {
-    sprintf(buf, "reset %s failed", name);
     logMsg(buf);
     Serial.println(F("failed!"));
     return false;

@@ -35,7 +35,7 @@ typedef struct {
   char password[32];
   bool enableAuth;
   bool enableJSON;
-  uint16_t crc;
+  uint16_t crc = 0;
 } mqttprefs_t;
 
 extern mqttprefs_t mqttSettings;

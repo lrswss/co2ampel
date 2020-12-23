@@ -71,8 +71,16 @@ void setup() {
     delay(1000);
   }
 
-  // load general settings from DS3231 EEPROM (24C32)
-  loadGeneralSettings();
+  // reset button will clear system settings
+  if (runmode == RESET) {
+    logMsg("reset button");
+    resetGeneralSettings();
+    resetMQTTSettings();
+    resetWifiSettings();
+  } else {
+    // load general settings from DS3231 EEPROM (24C32)
+    loadGeneralSettings();
+  }
   
   // check for power saving NOOP mode (requires valid RTC time)
   // in NOOP mode only webserver and MQTT are enabled (optional)
@@ -80,10 +88,13 @@ void setup() {
 
   // recommended: https://github.com/hallard/WeMos-Lora
 #ifdef HAS_LORAWAN_SHIELD
-  loadLoRaWANSettings();
+  if (runmode == RESET) {
+    resetLoRaWANSettings();
+    resetLoRaWANSession();
+  } else {
+    loadLoRaWANSettings();
+  }
   if (lorawanSettings.enabled && co2status != NOOP) {
-    if (runmode == RESET)
-      resetLoRaWANSession();
     lmic_init(); // might trigger a (blocking) join request
   } else if (!lorawanSettings.enabled) {
     Serial.println(F("LoRaWAN disabled."));
@@ -91,18 +102,11 @@ void setup() {
   }
 #endif
 
-  loadWifiSettings();
-  if (runmode == RESET) {
-    // reset button will clear wifi settings (credentials)
-    // and disable authentication for settings pages
-    logMsg("reset button");
-    settings.enableAuth = false;
-    resetWifiSettings();
-  }
 
   // always start an AP and fire up local webserver with (optional) timeout
   // to allow access to system settings or we'd be locked out until NOOP
   // time has finished...
+  loadWifiSettings();
   wifi_hotspot(false);
   webserver_start((co2status == NOOP && runmode != RESET) ? WEBSERVER_TIMEOUT_NOOP : wifiSettings.webserverTimeout);
 
@@ -115,7 +119,6 @@ void setup() {
   
   loadMQTTSettings();
   if (wifiSettings.enableWLANUplink && mqttSettings.enabled) {
-    mqtt_init();
     mqtt_send(500); // send initial alive message after system startup
   } else if (!mqttSettings.enabled) {
     Serial.println(F("MQTT disabled."));

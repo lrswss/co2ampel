@@ -75,8 +75,8 @@ void checkLowBat() {
   } else if (vbat <= VBAT_DEEPSLEEP) {
     blink_leds(QUARTER_RING, RED, 100, 6, false);
     dtostrf(vbat, 4, 2, vbatStr);
-    Serial.printf("WARNING: low battery %sV, enter deep sleep!", vbatStr);
-    sprintf(buf, "low battery %sV, sleeping", vbatStr);
+    Serial.printf("WARNING: low battery %sV, enter deep sleep!\n", vbatStr);
+    sprintf(buf, "low battery %sV", vbatStr);
     logMsg(buf);
     enterDeepSleep(3600);
   } else {
@@ -87,6 +87,7 @@ void checkLowBat() {
 
 
 void enterDeepSleep(uint32_t secs) {
+  char buf[32];
   if (secs > 4200) // max. 71 minutes
       secs = 4200;
       
@@ -99,9 +100,11 @@ void enterDeepSleep(uint32_t secs) {
 #endif
   scd30_sleep();
   Serial.printf("Sleeping for %d secs...\n", secs);
+  sprintf(buf, "sleeping %d secs", secs);
+  logMsg(buf);
   clear_leds(ALL_LEDS);
   delay(1000);
-  blink_leds(HALF_RING, BLUE, 250, 2, false);
+  blink_leds(HALF_RING, BLUE, 100, 2, false);
   Serial.flush();
   system_deep_sleep_set_option(2); // avoid RF recalibration after wake up
   ESP.deepSleep(secs*1000000);

@@ -17,7 +17,7 @@
 #include "led.h"
 #include "config.h"
 
-mqttprefs_t mqttSettings, mqttSettingsDefault;
+mqttprefs_t mqttSettings;
 
 static char clientname[64];
 static bool mqttInited = false;
@@ -50,6 +50,7 @@ static void setDefaults(mqttprefs_t *s) {
   strncpy(s->username, MQTT_USER, sizeof(mqttSettings.username));
   strncpy(s->password, MQTT_PASS, sizeof(mqttSettings.password));
 #endif
+ s->crc = crc16((uint8_t *) s, offsetof(mqttprefs_t, crc));
 }
 
 
@@ -90,10 +91,12 @@ static bool mqttJSON() {
 
   size_t s = serializeJson(JSON, buf);
   if (mqtt.publish(mqttSettings.topic, buf, s)) {
+    blink_leds(SYSTEM_LED1, ORANGE, 100, 2, true);
     Serial.println(F("OK."));
     return true;
   } else {
     Serial.println(F("failed!"));
+    blink_leds(SYSTEM_LEDS, RED, 250, 2, true);
     logMsg("mqtt json failed");
     return false;
   }
@@ -156,9 +159,11 @@ static bool mqttSingle() {
 
   if (count == 6 || (count == 5 && !hasBME280) ||
     ((co2status > ALARM  || co2status <= WARMUP ) && count == 2)) {
+    blink_leds(SYSTEM_LED1, ORANGE, 100, 2, true);
     Serial.println(F("OK."));
     return true;
   } else {
+    blink_leds(SYSTEM_LEDS, RED, 250, 2, true);
     logMsg("mqtt single failed");
     Serial.println(F("failed!"));
     return false;
@@ -205,6 +210,7 @@ void mqtt_stop() {
 bool mqtt_send(uint16_t timeoutMillis) {
   uint8_t retries = 0;
 
+  save_leds();
   if (!mqttInited)
     mqtt_init();
 
@@ -235,22 +241,25 @@ bool mqtt_send(uint16_t timeoutMillis) {
 // read general device settings from DS3231 EEPROM
 void loadMQTTSettings() {
   mqttprefs_t buf;
-  
-  setDefaults(&mqttSettings);  // set struct with defaults values from config.h
-  memcpy((void*)&mqttSettingsDefault, &mqttSettings, sizeof(mqttSettings)); // keep a copy for reset
+
+  setDefaults(&mqttSettings); // set struct with defaults values from config.h
   loadSettings(&mqttSettings, &buf, offsetof(mqttprefs_t, crc), EEPROM_MQTT_SETTINGS_ADDR, "MQTT settings");
   printMQTTSettings(&mqttSettings);
 }
 
 
 bool saveMQTTSettings() {
-  mqttSettings.crc = crc16((uint8_t *) &mqttSettings, offsetof(mqttprefs_t, crc));
-  return saveSettings(mqttSettings, EEPROM_MQTT_SETTINGS_ADDR, "MQTT settings") && printMQTTSettings(&mqttSettings);
+  if (mqttSettings.crc) {
+    mqttSettings.crc = crc16((uint8_t *) &mqttSettings, offsetof(mqttprefs_t, crc));
+    return saveSettings(mqttSettings, EEPROM_MQTT_SETTINGS_ADDR, "MQTT settings") && printMQTTSettings(&mqttSettings);
+  }
+  return false;
 }
 
 
 bool resetMQTTSettings() {
-  memcpy((void*)&mqttSettings, &mqttSettingsDefault, sizeof(mqttSettings)); // use copy with defaults
-  return resetSettings(mqttSettings, EEPROM_MQTT_SETTINGS_ADDR, "MQTT settings") && printMQTTSettings(&mqttSettings);
-
+  Serial.println(F("Reset MQTT settings."));
+  logMsg("reset MQTT settings");
+  setDefaults(&mqttSettings);
+  return saveSettings(mqttSettings, EEPROM_MQTT_SETTINGS_ADDR, "MQTT settings") && printMQTTSettings(&mqttSettings);
 }

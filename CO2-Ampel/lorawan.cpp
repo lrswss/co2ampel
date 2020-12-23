@@ -39,7 +39,7 @@ static bool lorawanObscureKeys = false;
 
 osjob_t lorawanjob;
 session_t lorawanSession;
-loraprefs_t lorawanSettings, lorawanSettingsDefault;
+loraprefs_t lorawanSettings;
 bool lmicInited = false;
 
 // since pin16 is used for deep sleep wakup
@@ -93,6 +93,7 @@ static void setDefaults(loraprefs_t *s) {
   memcpy_P(s->appEui, APPEUI, 8);
   memcpy_P(s->appKey, APPKEY, 16);
 #endif
+  s->crc = crc16((uint8_t *) s, offsetof(loraprefs_t, crc));
 }
 
 
@@ -189,7 +190,8 @@ void lmic_init() {
   
   if (lmicInited)
     return;
-  
+
+  save_leds();
   Serial.print(F("Init MCCI LoRaWAN LMIC Library Version "));
   printLMICVersion();
 
@@ -311,10 +313,10 @@ void onEvent (ev_t event) {
       break;
     case EV_TXCOMPLETE:
       Serial.println(F("TX completed (including RX windows)."));
-      logMsg("lorawan tx completed");
+      logMsg("lorawan tx");
       blink_leds(SYSTEM_LED1, GREEN, 100, 2, true);
       if (LMIC.txrxFlags & TXRX_ACK)
-        Serial.println(F("Received ACK messages."));
+        Serial.println(F("Received LoRaWAN ACK messages."));
       saveLoRaWANSession();
       break;
     case EV_RESET:
@@ -493,40 +495,49 @@ bool saveLoRaWANSession() {
 
 
 bool resetLoRaWANSession() {
+  Serial.println(F("Reset LoRaWAN session."));
+  logMsg("reset LoRaWAN session");
   memset(&lorawanSession, 0, sizeof(lorawanSession));
-  return resetSettings(lorawanSession, EEPROM_LORAWAN_SESSION_ADDR, "LoRaWAN session");
+  return saveSettings(lorawanSession, EEPROM_LORAWAN_SESSION_ADDR, "LoRaWAN session");
 }
 
 
 void loadLoRaWANSettings() {
   loraprefs_t buf;
-  
-  setDefaults(&lorawanSettings);  // set struct with defaults values from config.h
-  memcpy((void*)&lorawanSettingsDefault, &lorawanSettings, sizeof(lorawanSettings)); // keep a copy for reset
+
+  setDefaults(&lorawanSettings); // set struct with defaults values from config.h
   loadSettings(&lorawanSettings, &buf, offsetof(loraprefs_t, crc), EEPROM_LORAWAN_SETTINGS_ADDR, "LoRaWAN settings");
   printLoRaWANSettings(&lorawanSettings);
 }
 
 
+// save LoRaWAN settings; if LMIC is active also save current session
+// keys with settings struct or if updatesession is true, update current
+// session with keys and data rate from settings
 bool saveLoRaWANSettings(bool updatesession) {
-  lorawanSettings.netid = lorawanSettings.useTTN ? LORAWAN_NETID_TTN : LORAWAN_NETID;
-  if (lmic_ready()) {
-    if (updatesession) {
-      LMIC_setDrTxpow(lorawanSettings.drSend, LORAWAN_TXPOWER);
-      LMIC_setSession(lorawanSettings.netid, lorawanSettings.devAddr,
-          lorawanSettings.nwksKey, lorawanSettings.appsKey);
-    } else {      
-      LMIC_getSessionKeys(&lorawanSettings.netid, &lorawanSettings.devAddr,
-          lorawanSettings.nwksKey, lorawanSettings.appsKey);
+  if (lorawanSettings.crc) { // use an existing crc as flag for a valid settings struct
+    lorawanSettings.netid = lorawanSettings.useTTN ? LORAWAN_NETID_TTN : LORAWAN_NETID;
+    if (lmic_ready()) {
+      if (updatesession) {
+        LMIC_setDrTxpow(lorawanSettings.drSend, LORAWAN_TXPOWER);
+        LMIC_setSession(lorawanSettings.netid, lorawanSettings.devAddr,
+            lorawanSettings.nwksKey, lorawanSettings.appsKey);
+      } else {
+        LMIC_getSessionKeys(&lorawanSettings.netid, &lorawanSettings.devAddr,
+            lorawanSettings.nwksKey, lorawanSettings.appsKey);
+      }
     }
+    lorawanSettings.crc = crc16((uint8_t *) &lorawanSettings, offsetof(loraprefs_t, crc));
+    return saveSettings(lorawanSettings, EEPROM_LORAWAN_SETTINGS_ADDR, "LoRaWAN settings") && printLoRaWANSettings(&lorawanSettings);
   }
-  lorawanSettings.crc = crc16((uint8_t *) &lorawanSettings, offsetof(loraprefs_t, crc));
-  return saveSettings(lorawanSettings, EEPROM_LORAWAN_SETTINGS_ADDR, "LoRaWAN settings") && printLoRaWANSettings(&lorawanSettings);
+  return false;
 }
 
 
 bool resetLoRaWANSettings() {
-  memcpy((void*)&lorawanSettings, &lorawanSettingsDefault, sizeof(lorawanSettings)); // use copy with defaults
-  return resetSettings(lorawanSettings, EEPROM_LORAWAN_SETTINGS_ADDR, "LoRaWAN settings");
+  Serial.println(F("Reset LoRaWAN settings."));
+  logMsg("reset LoRaWAN settings");
+  setDefaults(&lorawanSettings);
+  return saveSettings(lorawanSettings, EEPROM_LORAWAN_SETTINGS_ADDR, "LoRaWAN settings") && printLoRaWANSettings(&lorawanSettings);
 }
 #endif

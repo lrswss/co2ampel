@@ -29,7 +29,7 @@ typedef struct {
   bool enableWLANUplink;
   char wifiStaSSID[32];
   char wifiStaPassword[32];
-  uint16_t crc;
+  uint16_t crc = 0;
 } wifiprefs_t;
 
 extern wifiprefs_t wifiSettings;
