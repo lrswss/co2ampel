@@ -1,5 +1,5 @@
 /***************************************************************************
-  Copyright (c) 2020 Lars Wessels
+  Copyright (c) 2020-2021 Lars Wessels
 
   This file a part of the "CO2-Ampel" source code.
   https://github.com/lrswss/co2ampel
@@ -43,6 +43,7 @@ extern mqttprefs_t mqttSettings;
 bool mqtt_init();
 void mqtt_stop();
 bool mqtt_send(uint16_t timeoutMillis);
+uint16_t mqtt_messages();
 void loadMQTTSettings();
 bool saveMQTTSettings();
 bool resetMQTTSettings();

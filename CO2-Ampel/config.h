@@ -1,5 +1,5 @@
 /***************************************************************************
-  Copyright (c) 2020 Lars Wessels
+  Copyright (c) 2020-2021 Lars Wessels
 
   This file a part of the "CO2-Ampel" source code.
   https://github.com/lrswss/co2ampel
@@ -11,7 +11,7 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
-#define FIRMWARE_VERSION 102
+#define FIRMWARE_VERSION 103
 
 // choose language for web interface
 //#define LANG_DE
@@ -52,6 +52,11 @@
 
 // timeout for local webserver (set to 0 to disable)
 #define WEBSERVER_TIMEOUT_SECS 600
+
+// enable RESTful API
+// will disable WEBSERVER_TIMEOUT_SECS
+// requires ENABLE_WLAN_UPLINK, WIFI_STA_SSID and WIFI_STA_PASSWORD
+//#define ENABLE_REST
 
 // credentials for local access point (min. 8 characters!)
 #define WIFI_AP_PASSWORD "__secret__"

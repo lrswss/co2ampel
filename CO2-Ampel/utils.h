@@ -1,5 +1,5 @@
 /***************************************************************************
-  Copyright (c) 2020 Lars Wessels
+  Copyright (c) 2020-2021 Lars Wessels
 
   This file a part of the "CO2-Ampel" source code.
   https://github.com/lrswss/co2ampel

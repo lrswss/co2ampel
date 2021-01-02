@@ -1,5 +1,5 @@
 /***************************************************************************
-  Copyright (c) 2020 Lars Wessels
+  Copyright (c) 2020-2021 Lars Wessels
 
   This file a part of the "CO2-Ampel" source code.
   https://github.com/lrswss/co2ampel
@@ -200,7 +200,8 @@ void stopNTPSync() {
 // read general device settings from DS3231 EEPROM
 void loadGeneralSettings() {
   sysprefs_t buf;
-  
+
+  memset(&settings, 0, sizeof(settings));
   setDefault(&settings);  // set struct with defaults values from config.h
   loadSettings(&settings, &buf, offsetof(sysprefs_t, crc), EEPROM_SYSTEM_PREFS_ADDR, "general settings");
   printGeneralSettings(&settings);
@@ -221,6 +222,7 @@ bool saveGeneralSettings() {
 bool resetGeneralSettings() {
   Serial.println(F("Reset general settings."));
   logMsg("reset general settings");
+  memset(&settings, 0, sizeof(settings));
   setDefault(&settings);
   return saveSettings(settings, EEPROM_SYSTEM_PREFS_ADDR, "general settings") && printGeneralSettings(&settings);
 }

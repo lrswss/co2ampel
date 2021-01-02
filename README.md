@@ -137,6 +137,11 @@ to spare flash for the logging. To save battery set the CPU-Frequency to `80 MHz
 * [Time](https://github.com/PaulStoffregen/Time)
 * [Timezone](https://github.com/JChristensen/Timezone)
 
+You only need to upload the firmware from the Arduino IDE to the Wemos D1 mini
+using its micro USB connector once. For further updates just use the *Export compiled
+Binary* option under the *Sketch* menu in the Arduino  IDE and upload the binary
+using the firmware update option in the web interface.
+
 ## Initial startup
 
 After flashing the firmware onto a hopefully working hardware setup you
@@ -242,6 +247,6 @@ discuss what you would like to change.
 
 ## License
 
-Copyright (c) 2020 Lars Wessels  
+Copyright (c) 2020-2021 Lars Wessels  
 This software was published under the Apache License 2.0.  
 Please check the [license file](LICENSE).

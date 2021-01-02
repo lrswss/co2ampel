@@ -1,5 +1,5 @@
 /***************************************************************************
-  Copyright (c) 2020 Lars Wessels
+  Copyright (c) 2020-2021 Lars Wessels
 
   This file a part of the "CO2-Ampel" source code.
   https://github.com/lrswss/co2ampel
@@ -93,4 +93,16 @@ void blink_leds(PixelBits pixels, uint32_t color, uint16_t pause, uint8_t blinks
   }
   if (restore)
     restore_leds();
+}
+
+
+// returns number of LEDs currently on
+uint8_t leds_on() {
+  uint8_t count = 0;
+
+  for (uint8_t i = 0; i < NUM_PIXELS; i++) {
+    if (long(currentState[i]) > 0)
+      count++;
+  }
+  return count;
 }

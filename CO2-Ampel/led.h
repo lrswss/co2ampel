@@ -1,5 +1,5 @@
 /***************************************************************************
-  Copyright (c) 2020 Lars Wessels
+  Copyright (c) 2020-2021 Lars Wessels
 
   This file a part of the "CO2-Ampel" source code.
   https://github.com/lrswss/co2ampel
@@ -61,5 +61,6 @@ void set_leds(PixelBits pixels, uint32_t color);
 void blink_leds(PixelBits pixels, uint32_t color, uint16_t pause, uint8_t blinks, bool restore);
 void timer_leds(PixelBits pixels, uint32_t color, uint16_t timeout_ms, bool restore);
 void toggle_leds(PixelBits pixels, uint32_t color);
+uint8_t leds_on();
 
 #endif

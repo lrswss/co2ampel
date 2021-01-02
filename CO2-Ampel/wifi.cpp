@@ -1,5 +1,5 @@
 /***************************************************************************
-  Copyright (c) 2020 Lars Wessels
+  Copyright (c) 2020-2021 Lars Wessels
 
   This file a part of the "CO2-Ampel" source code.
   https://github.com/lrswss/co2ampel
@@ -25,6 +25,7 @@ static bool printWifiSettings(wifiprefs_t *s) {
  #ifdef SETTINGS_DEBUG
   Serial.printf("WebserverTimeout: %d\n", s->webserverTimeout);
   Serial.printf("WebserverAutoOff: %d\n", s->webserverAutoOff);
+  Serial.printf("EnableREST: %d\n", s->enableREST);
   Serial.printf("EnableUplink: %d\n", s->enableWLANUplink);
   Serial.printf("Password AP: %s\n", s->wifiApPassword);
   Serial.printf("WiFi SSID: %s\n", s->wifiStaSSID);
@@ -42,10 +43,13 @@ static void setDefaults(wifiprefs_t *s) {
   memset(s, 0, sizeof(*s));
 
   s->webserverTimeout = WEBSERVER_TIMEOUT_SECS;
-#if WEBSERVER_TIMEOUT_SECS > 0
+#if WEBSERVER_TIMEOUT_SECS > 0 && !defined(ENABLE_REST)
   s->webserverAutoOff = true;
 #endif
-#ifdef ENABLE_WLAN_UPLINK
+#ifdef ENABLE_REST
+  s->enableREST = true;
+#endif
+#if defined(ENABLE_WLAN_UPLINK) || defined(ENABLE_REST)
   s->enableWLANUplink = true;
 #endif
 #ifdef WIFI_AP_PASSWORD
@@ -209,6 +213,7 @@ void wifi_stop() {
 void loadWifiSettings() {
   wifiprefs_t buf;
 
+  memset(&wifiSettings, 0, sizeof(wifiSettings));
   setDefaults(&wifiSettings);  // set struct with defaults values from config.h
   loadSettings(&wifiSettings, &buf, offsetof(wifiprefs_t, crc), EEPROM_WIFI_PREFS_ADDR, "WiFi settings");
   printWifiSettings(&wifiSettings);
@@ -227,6 +232,7 @@ bool saveWifiSettings() {
 bool resetWifiSettings() {
   Serial.println(F("Reset WiFi settings."));
   logMsg("reset WiFi settings");
+  memset(&wifiSettings, 0, sizeof(wifiSettings));
   setDefaults(&wifiSettings);
   return saveSettings(wifiSettings, EEPROM_WIFI_PREFS_ADDR, "WiFi settings") && printWifiSettings(&wifiSettings);
 }

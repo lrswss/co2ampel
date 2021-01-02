@@ -1,5 +1,5 @@
 /***************************************************************************
-  Copyright (c) 2020 Lars Wessels
+  Copyright (c) 2020-2021 Lars Wessels
 
   This file a part of the "CO2-Ampel" source code.
   https://github.com/lrswss/co2ampel
@@ -60,7 +60,7 @@ typedef struct {
   char authUsername[16];
   char authPassword[16];
   bool enableAuth;
-  bool enableLogging;
+  bool enableLogging = true; // allow early logging in setup()
   uint16_t loggingInterval;
   uint16_t altitude;
   uint16_t crc = 0;

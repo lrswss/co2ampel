@@ -1,5 +1,5 @@
 /***************************************************************************
-  Copyright (c) 2020 Lars Wessels
+  Copyright (c) 2020-2021 Lars Wessels
 
   This file a part of the "CO2-Ampel" source code.
   https://github.com/lrswss/co2ampel
@@ -21,6 +21,7 @@ mqttprefs_t mqttSettings;
 
 static char clientname[64];
 static bool mqttInited = false;
+static uint16_t mqttMessageCount = 0;
 
 WiFiClient wifi;
 PubSubClient mqtt(wifi);
@@ -92,7 +93,10 @@ static bool mqttJSON() {
   size_t s = serializeJson(JSON, buf);
   if (mqtt.publish(mqttSettings.topic, buf, s)) {
     blink_leds(SYSTEM_LED1, ORANGE, 100, 2, true);
+    mqttMessageCount++;
     Serial.println(F("OK."));
+    sprintf(buf, "mqtt json publish %d", mqttMessageCount);
+    logMsg(buf);
     return true;
   } else {
     Serial.println(F("failed!"));
@@ -105,7 +109,7 @@ static bool mqttJSON() {
 
 // publish all sensor readings on seperate subtopics
 static bool mqttSingle() {
-  static char topicStr[96];
+  static char topicStr[96], buf[128];
   char valueStr[8];
   uint8_t count = 0;
 
@@ -160,6 +164,9 @@ static bool mqttSingle() {
   if (count == 6 || (count == 5 && !hasBME280) ||
     ((co2status > ALARM  || co2status <= WARMUP ) && count == 2)) {
     blink_leds(SYSTEM_LED1, ORANGE, 100, 2, true);
+    mqttMessageCount++;
+    sprintf(buf, "mqtt single publish %d", mqttMessageCount);
+    logMsg(buf);
     Serial.println(F("OK."));
     return true;
   } else {
@@ -173,6 +180,7 @@ static bool mqttSingle() {
 
 bool mqtt_init() {
   String name;
+  char buf[96];
 
   if (mqttInited)
     return true;
@@ -184,6 +192,8 @@ bool mqtt_init() {
   
   if (mqttSettings.enabled && strlen(mqttSettings.broker) >= 4) {
     Serial.println(F("MQTT started."));
+    sprintf(buf, "mqtt started, %s/%s", mqttSettings.broker, mqttSettings.topic);
+    logMsg(buf);
     mqtt.setServer(mqttSettings.broker, MQTT_PORT);
     name = String(MQTT_CLIENT_NAME).substring(0,48) + "-" + systemID() + "-" + String(random(0xffff), HEX);
     sprintf(clientname, name.c_str(), name.length());
@@ -242,9 +252,16 @@ bool mqtt_send(uint16_t timeoutMillis) {
 void loadMQTTSettings() {
   mqttprefs_t buf;
 
+  memset(&mqttSettings, 0, sizeof(mqttSettings));
   setDefaults(&mqttSettings); // set struct with defaults values from config.h
   loadSettings(&mqttSettings, &buf, offsetof(mqttprefs_t, crc), EEPROM_MQTT_SETTINGS_ADDR, "MQTT settings");
   printMQTTSettings(&mqttSettings);
+}
+
+
+// returns number of successful MQTT push messages
+uint16_t mqtt_messages() {
+  return mqttMessageCount;
 }
 
 
@@ -260,6 +277,7 @@ bool saveMQTTSettings() {
 bool resetMQTTSettings() {
   Serial.println(F("Reset MQTT settings."));
   logMsg("reset MQTT settings");
+  memset(&mqttSettings, 0, sizeof(mqttSettings));
   setDefaults(&mqttSettings);
   return saveSettings(mqttSettings, EEPROM_MQTT_SETTINGS_ADDR, "MQTT settings") && printMQTTSettings(&mqttSettings);
 }

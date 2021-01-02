@@ -1,5 +1,5 @@
 /***************************************************************************
-  Copyright (c) 2020 Lars Wessels
+  Copyright (c) 2020-2021 Lars Wessels
 
   This file a part of the "CO2-Ampel" source code.
   https://github.com/lrswss/co2ampel
@@ -13,7 +13,7 @@ const char HEADER_html[] PROGMEM = R"=====(
 <html lang="de">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<meta name="author" content="(c) 2020 Lars Wessels, Karlsruhe, GERMANY">
+<meta name="author" content="(c) 2020-2021 Lars Wessels, Karlsruhe, GERMANY">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
 <title>CO2-Ampel</title>
 <style>
@@ -128,20 +128,24 @@ function getReadings() {
       document.getElementById("Time").innerHTML = res.time;
       document.getElementById("Temp").innerHTML = res.temperature;
       document.getElementById("CO2").innerHTML = res.co2median;
-      co2status = Number(res.co2status); // see config.h
+      co2status = parseInt(res.co2status); // see config.h
       document.getElementById("Hum").innerHTML = res.humidity;
       document.getElementById("Pres").innerHTML = res.pressure;
       batteryVoltage = parseFloat(res.vbat);
-      document.getElementById("VBat").innerHTML = res.vbat;
-      webserverTimeout = Number(res.webserverTimeout);
+      if (batteryVoltage > 0) {
+        document.getElementById("VBat").innerHTML = res.vbat;
+      }
+      webserverTimeout = parseInt(res.webserverTimeout);
       document.getElementById("WebserverTimeout").innerHTML = webserverTimeout > 60 ? Math.round(webserverTimeout/60) + " Min." : webserverTimeout + " Sek.";
-      calibrationTimeout = Number(res.calibrationTimeout);
+      calibrationTimeout = parseInt(res.calibrationTimeout);
       document.getElementById("CalibrationTimeout").innerHTML = calibrationTimeout;
-      warmupTimeout = Number(res.warmupTimeout);
+      warmupTimeout = parseInt(res.warmupTimeout);
       document.getElementById("WarmupTimeout").innerHTML = warmupTimeout;
+      mqttCounter = parseInt(res.mqttMessages)
+      document.getElementById("MqttCounter").innerHTML = mqttCounter;
       document.getElementById("LoRaDevAddr").innerHTML = res.loraDevAddr;
       document.getElementById("LoRaSeqnoUp").innerHTML = res.loraSeqnoUp;
-      lorawanMode = Number(res.otaa);
+      lorawanMode = parseInt(res.otaa);
 
       if (calibrationInProgress || calibrationTimeout > 0) {
         if (co2status != 6) {  // calibration ended
@@ -196,16 +200,24 @@ function getReadings() {
         document.getElementById("noopMode").style.display = "none";
       }
       prevCO2status = co2status; // used to add small (empty) delay in status messages
-      
+
       if (height > 0) {
         height += 4;
         document.getElementById("message").style.height = height + "px";
+      } else {
+        document.getElementById("message").style.display = "none";
       }
-      
-      if (batteryVoltage < 3.70) {
+
+      if (batteryVoltage < 3.70 && batteryVoltage > 0) {
         document.getElementById("VBatDisplay").style = "font-weight:bold;color:red";
       } else {
         document.getElementById("VBatDisplay").style = "font-weight:normal;color:black";
+      }
+
+      if (mqttCounter > -1) {
+        document.getElementById("mqtt_msgs").style.display = "table-row";
+      } else {
+        document.getElementById("mqtt_msgs").style.display = "none";
       }
 
       if (lorawanMode > -1) {
@@ -236,9 +248,9 @@ function initPage() {
 <div style="text-align:left;display:inline-block;min-width:340px;">
 <div style="text-align:center;">
 <h2 id="heading">CO2-Ampel __SYSTEMID__</h2>
-<div id="message" style="margin-top:10px;color:red;height:16px;text-align:center;font-weight:bold;max-width:335px">
+<div id="message" style="margin-top:10px;color:red;text-align:center;font-weight:bold;max-width:335px">
 <span id="sysReset" style="display:none">System wird neu gestartet...</span>
-<span id="timeoutInfo" style="display:block">Webserver-Abschaltung in <span id="WebserverTimeout">--</span></span>
+<span id="timeoutInfo" style="display:none">Webserver-Abschaltung in <span id="WebserverTimeout">--</span></span>
 <span id="webserverOffline" style="display:none">Webserver deaktiviert!</span>
 <span id="calibrateInfo" style="display:none">CO2-Kalibrierung noch <span id="CalibrationTimeout">--</span> Sek.</span>
 <span id="calibrateDone" style="display:none">CO2-Kalibrierung beendet!</span>
@@ -259,7 +271,8 @@ function initPage() {
   <tr id="lorawan_modus" style="display:none;"><th>LoRaWAN-Modus:</th><td><span id="LoRaMode">---</span></td></tr>
   <tr id="lorawan_addr" style="display:none;"><th>LoRaWAN-Adresse:</th><td><span id="LoRaDevAddr">----------<span></td></tr>
   <tr id="lorawan_seqnoup" style="display:none;"><th>LoRaWAN-Pakete:</th><td><span id="LoRaSeqnoUp">--<span></td></tr>
-  <tr><th>Batteriespannung:</th><td id="VBatDisplay"><span id="VBat">--.--</span> V</td></tr>
+  <tr id="mqtt_msgs" style="display:none;"><th>MQTT-Nachrichten:</th><td><span id="MqttCounter">--<span></td></tr>
+  <tr><th>Batteriespannung:</th><td id="VBatDisplay"><span id="VBat">-.--</span> V</td></tr>
 </table>
 </div>
 <div id="buttons" style="margin-top:10px">
@@ -275,7 +288,7 @@ function initPage() {
 const char FOOTER_html[] PROGMEM = R"=====(
 <div class="footer"><hr/>
 <p style="float:left;margin-top:-2px"><a href="https://github.com/lrswss/co2ampel" title="build on __BUILD__">Firmware __FIRMWARE__</a></p>
-<p style="float:right;margin-top:-2px"><a href="mailto:software@bytebox.org">&copy; 2020 Lars Wessels</a></p>
+<p style="float:right;margin-top:-2px"><a href="mailto:software@bytebox.org">&copy; 2020-2021 Lars Wessels</a></p>
 <div style="clear:both;"></div>
 </div>
 </div>
@@ -613,6 +626,7 @@ function hideMessages() {
   document.getElementById("configSaveFailed").style.display = "none";
   document.getElementById("configReset").style.display = "none";
   document.getElementById("appassError").style.display = "none";
+  document.getElementById("stassidError").style.display = "none";
   document.getElementById("stapassError").style.display = "none";
   document.getElementById("mqttpassError").style.display = "none";
   document.getElementById("mqttuserError").style.display = "none";
@@ -626,6 +640,11 @@ function checkInput() {
   if (document.getElementById("input_appassword").value.length > 0 && 
       document.getElementById("input_appassword").value.length < 8) {
     document.getElementById("appassError").style.display = "block";
+    err++;
+  }
+  if (document.getElementById("checkbox_wlan").checked == true &&
+      document.getElementById("input_stassid").value.length <= 2) {
+    document.getElementById("stassidError").style.display = "block";
     err++;
   }
   if (document.getElementById("checkbox_wlan").checked == true &&
@@ -692,8 +711,20 @@ function configResetted() {
 function toggleWebAutoOff() {
   if (document.getElementById("checkbox_webtimeout").checked == true) {
     document.getElementById("webtimeout").style.display = "block";
+    document.getElementById("checkbox_restapi").checked = false;
   } else {
     document.getElementById("webtimeout").style.display = "none";
+  }
+}
+
+function toggleREST() {
+  if (document.getElementById("checkbox_restapi").checked == true) {
+    document.getElementById("checkbox_webtimeout").checked = false;
+    document.getElementById("webtimeout").style.display = "none";
+    if (document.getElementById("checkbox_wlan").checked == false) {
+      document.getElementById("checkbox_wlan").checked = true;
+      toggleWLAN();
+    }
   }
 }
 
@@ -701,10 +732,13 @@ function toggleWLAN() {
   if (document.getElementById("checkbox_wlan").checked == true) {
     document.getElementById("wlan").style.display = "block";
     document.getElementById("mqtt").style.display = "block";
+    toggleMQTT();
   } else {
     document.getElementById("wlan").style.display = "none";
     document.getElementById("mqtt").style.display = "none";
     document.getElementById("checkbox_mqtt").checked = false;
+    document.getElementById("checkbox_restapi").checked = false;
+    toggleREST();
   }
 }
 
@@ -744,6 +778,7 @@ function clearSettings() {
 <span id="configSaveFailed" style="display:none;color:red">Fehler beim Speichern!</span>
 <span id="configReset" style="display:none;color:red">Einstellungen zur&uuml;ckgesetzt!</span>
 <span id="appassError" style="display:none">Passwort f&uuml;r Access-Point zu kurz!</span>
+<span id="stassidError" style="display:none">WLAN-SSID fehlt!</span>
 <span id="stapassError" style="display:none">WLAN-Passwort f&uuml;r zu kurz!</span>
 <span id="mqttuserError" style="display:none">MQTT-Benutzername ung&uuml;tig!</span>
 <span id="mqttpassError" style="display:none">MQTT-Passwort ung&uuml;tig!</span>
@@ -754,7 +789,8 @@ function clearSettings() {
   <fieldset><legend><b>&nbsp;Lokaler Webserver&nbsp;</b></legend>
   <p><input id="checkbox_webtimeout" name="webserverautooff" type="checkbox" onclick="toggleWebAutoOff();" __WEBAUTOOFF__><b>Autoabschaltung aktivieren</b></p>
   <p id="webtimeout"><b>Laufzeit (min. __WEBTIMEOUTMIN__ Sek.)</b><br />
-  <input name="webtimeout" value="__WEBTIMEOUT__" onkeyup="digitsOnly(this)"></p></fieldset>
+  <input name="webtimeout" value="__WEBTIMEOUT__" onkeyup="digitsOnly(this)"></p>
+  <p><input id="checkbox_restapi" name="restapi" type="checkbox" onclick="toggleREST();" __RESTAPI__><b>RESTful API aktivieren</b></p></fieldset>
   <br />
   <fieldset><legend><b>&nbsp;WLAN&nbsp;</b></legend>
   <p><b>Passwort f&uuml;r lokalen Access-Point</b><br />
@@ -762,7 +798,7 @@ function clearSettings() {
   <p style="margin-top:10px"><input id="checkbox_wlan" name="wlan" type="checkbox" onclick="toggleWLAN();" __WLAN__><b>Mit lokalem WLAN verbinden</b></p>
   <span id="wlan">
     <p><b>Netzwerkkennung (SSID)</b><br />
-    <input name="stassid" size="16" maxlength="31" value="__STASSID__"></p>
+    <input id="input_stassid" name="stassid" size="16" maxlength="31" value="__STASSID__"></p>
     <p><b>Passwort (optional)</b><br />
     <input id="input_stapassword" type="password" name="stapassword" size="16" maxlength="31" value="__STAPASSWORD__"></p>
   </span></fieldset>

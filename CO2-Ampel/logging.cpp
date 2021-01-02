@@ -1,5 +1,5 @@
 /***************************************************************************
-  Copyright (c) 2020 Lars Wessels
+  Copyright (c) 2020-2021 Lars Wessels
 
   This file a part of the "CO2-Ampel" source code.
   https://github.com/lrswss/co2ampel
@@ -21,6 +21,8 @@
 #include "html_DE.h"
 #endif
 
+static bool fsInited = true;
+
 void mountFS() {
   FSInfo fs_info;
   uint32_t freeBytes;
@@ -33,6 +35,7 @@ void mountFS() {
     Serial.println(F(" kb free"));
     listDirectory("/");
     rotateLogs();
+    fsInited = true;
   } else {
     Serial.println(F("Failed to mount LittleFS!"));
   }
@@ -45,7 +48,7 @@ void logMsg(char *msg) {
   char timeStr[20];
   DateTime now;
   
-  if (!settings.enableLogging)
+  if (!settings.enableLogging || !fsInited)
     return;
 
   if (rtcOK) {
@@ -68,7 +71,7 @@ void logMsg(char *msg) {
 void logReadings(uint32_t runtimeSecs) {
   static char csv[64], buf[16];
 
-  if (co2status == NOOP)
+  if (co2status == NOOP || !settings.enableLogging)
     return;
 
   sprintf(csv, "%d,%s,", runtimeSecs, statusNames[co2status]);
@@ -99,14 +102,10 @@ void logReadings(uint32_t runtimeSecs) {
 
 
 bool handleSendFile(String path) {
-  String html;
-  if (path.endsWith("/")) {
-    html += HEADER_html;
-    html += ROOT_html;
-    webserver.send(200, "text/html", html);
-  }
-  webserver_tickle();
-  if (LittleFS.exists(path)) {
+  if (!settings.enableLogging || !fsInited)
+    return false;
+
+  if (LittleFS.exists(path) && strstr(path.c_str(), LOGFILE_NAME) != NULL) {
     File file = LittleFS.open(path, "r");
     if (file) {
       logMsg("send log");
@@ -139,12 +138,13 @@ void listDirectory(const char* dir) {
 
 String listDirHTML(const char* path) {
   String listing, filename;
-  Dir rootDir = LittleFS.openDir("/");
+  Dir rootDir;
   File file;
 
-  if (!settings.enableLogging)
+  if (!settings.enableLogging || !fsInited)
     return listing;
-  
+
+  rootDir = LittleFS.openDir("/");
   while (rootDir.next()) {
     filename = rootDir.fileName();
     file = rootDir.openFile("r");
@@ -165,7 +165,7 @@ void removeLogs() {
   String filename;
   Dir rootDir;
 
-  if (!settings.enableLogging)
+  if (!settings.enableLogging || !fsInited)
     return;
 
   rootDir = LittleFS.openDir("/");
@@ -184,7 +184,7 @@ void rotateLogs() {
   int maxFiles = 0;
   FSInfo fs_info;
 
-  if (!settings.enableLogging)
+  if (!settings.enableLogging || !fsInited)
     return;
 
   LittleFS.info(fs_info);
@@ -218,7 +218,7 @@ void sendAllLogs() {
   WiFiClient client = webserver.client();
   uint32_t totalSize = 0;
 
-  if (!settings.enableLogging)
+  if (!settings.enableLogging || !fsInited)
     return;
 
   // determine total size of all files (for content-size header)

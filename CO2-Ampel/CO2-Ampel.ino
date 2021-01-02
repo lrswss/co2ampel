@@ -1,6 +1,6 @@
 /*******************************************************************************
 
-  Copyright (c) 2020 Lars Wessels
+  Copyright (c) 2020-2021 Lars Wessels
 
   Yet another "CO2-Ampel" based on an ESP8266 (Wemos D1 mini) to continuously
   measure CO2 concentration indoor with a SCD30 sensor accompanied by a BME280
@@ -8,10 +8,9 @@
   (good, medium, critical, bad) is shown using a NeoPixel ring with WS2812
   LEDs illuminating the device in either green, yellow or red.
 
-
   Unlike other devices this one runs on two 18650 LiIon-batteries, offers a
-  sophisticated webinterface for configuration, ive sensor readings and OTA
-  firmware updates. Sensor data can be logged to local flash (LittleFS),
+  sophisticated web interface for configuration, live sensor readings and
+  OTA firmware updates. Sensor data can be logged to local flash (LittleFS),
   retrieved RESTful, published using MQTT or transmitted with LoRaWAN if a
   RFM95 shield is installed.
 
@@ -46,7 +45,7 @@ void setup() {
   char buf[32];
 
   Serial.println();
-  Serial.printf("%s (v%d)\n", "CO2-Ampel-BME280-LoRaWAN-MQTT", FIRMWARE_VERSION);
+  Serial.printf("%s (v%d)\n", "CO2-Ampel-BME280-LoRaWAN-MQTT-RESTful", FIRMWARE_VERSION);
 
   bootMessage();
   led_init();
@@ -102,7 +101,6 @@ void setup() {
   }
 #endif
 
-
   // always start an AP and fire up local webserver with (optional) timeout
   // to allow access to system settings or we'd be locked out until NOOP
   // time has finished...
@@ -147,7 +145,6 @@ void setup() {
 void loop() {
   static uint32_t failureStateSecs, failureCountdown, runtimeCounterSecs = 1;
   static uint32_t prevSecond, prevReadings = millis()/1000;
-  static bool ledsOn = false;
 
   // check for webserver timeout and handle browser requests
   if (!webserver_stop(false))
@@ -285,19 +282,18 @@ void loop() {
       }
 
 #ifdef HAS_LORAWAN_SHIELD
-      if (!(runtimeCounterSecs % lorawanSettings.txInterval)) {
-        if (lorawanSettings.enabled && webserver_idle() > 3000) {
-          if (!lmic_ready())
-            // only triggered here if (re)enabled in webui, blocking on OTAA join 
-            lmic_init();
-          if (lmic_ready() && co2status > WARMUP && co2status < CALIBRATE) {
-            lmic_send(&lorawanjob);
-            waitForLorawanJobs(5, false); // blocking
-          }
-        } else if (!lorawanSettings.enabled && lmic_ready()) {
+      if (!(runtimeCounterSecs % 10) && webserver_idle() > 5000) {
+        if (lorawanSettings.enabled && !lmic_ready())
+          lmic_init();
+        else if (!lorawanSettings.enabled && lmic_ready())
           lmic_stop();
+      }
+      if (lorawanSettings.enabled && !(runtimeCounterSecs % lorawanSettings.txInterval)) {
+        if (lmic_ready() && co2status > WARMUP && co2status < CALIBRATE) {
+          lmic_send(&lorawanjob);
+          waitForLorawanJobs(5, false); // blocking
         }
-      } 
+      }
 #endif
 
       if (scd30_warmup_countdown > 1)
@@ -314,10 +310,9 @@ void loop() {
 
     } // end !NOOP
 
-    // blinking on WARMUP, ALARM, CALIBRATE, ERROR or NOOP status
+    // blinking on ALARM, CALIBRATE, ERROR or NOOP status
     if (co2status >= ALARM) {
-      if (!ledsOn) {
-        ledsOn = true;
+      if (leds_on() > 0) {
         if (co2status == NOOP) {
           blink_leds(QUARTER_RING, BLUE, 250, 1, false);
 
@@ -347,7 +342,6 @@ void loop() {
         }
       } else {
         clear_leds(FULL_RING);
-        ledsOn = false;
       }
     }
     runtimeCounterSecs++;

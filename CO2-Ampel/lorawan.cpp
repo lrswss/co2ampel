@@ -1,5 +1,5 @@
 /***************************************************************************
-  Copyright (c) 2020 Lars Wessels
+  Copyright (c) 2020-2021 Lars Wessels
 
   This file a part of the "CO2-Ampel" source code.
   https://github.com/lrswss/co2ampel
@@ -274,6 +274,8 @@ void lmic_init() {
 
 
 void onEvent (ev_t event) {
+  char buf[32];
+
   save_leds();
   switch (event) {
     case EV_JOINING:
@@ -313,7 +315,8 @@ void onEvent (ev_t event) {
       break;
     case EV_TXCOMPLETE:
       Serial.println(F("TX completed (including RX windows)."));
-      logMsg("lorawan tx");
+      sprintf(buf, "lorawan tx, seqno %d", LMIC.seqnoUp);
+      logMsg(buf);
       blink_leds(SYSTEM_LED1, GREEN, 100, 2, true);
       if (LMIC.txrxFlags & TXRX_ACK)
         Serial.println(F("Received LoRaWAN ACK messages."));
@@ -505,6 +508,7 @@ bool resetLoRaWANSession() {
 void loadLoRaWANSettings() {
   loraprefs_t buf;
 
+  memset(&lorawanSettings, 0, sizeof(lorawanSettings));
   setDefaults(&lorawanSettings); // set struct with defaults values from config.h
   loadSettings(&lorawanSettings, &buf, offsetof(loraprefs_t, crc), EEPROM_LORAWAN_SETTINGS_ADDR, "LoRaWAN settings");
   printLoRaWANSettings(&lorawanSettings);
@@ -537,6 +541,7 @@ bool saveLoRaWANSettings(bool updatesession) {
 bool resetLoRaWANSettings() {
   Serial.println(F("Reset LoRaWAN settings."));
   logMsg("reset LoRaWAN settings");
+  memset(&lorawanSettings, 0, sizeof(lorawanSettings));
   setDefaults(&lorawanSettings);
   return saveSettings(lorawanSettings, EEPROM_LORAWAN_SETTINGS_ADDR, "LoRaWAN settings") && printLoRaWANSettings(&lorawanSettings);
 }

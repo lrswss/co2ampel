@@ -1,5 +1,5 @@
 /***************************************************************************
-  Copyright (c) 2020 Lars Wessels
+  Copyright (c) 2020-2021 Lars Wessels
 
   This file a part of the "CO2-Ampel" source code.
   https://github.com/lrswss/co2ampel
@@ -54,8 +54,8 @@ static void sendCORS() {
 
 // pass sensor readings, system status to web ui as JSON
 static void updateUI() {
-  StaticJsonDocument<288> JSON;
-  char reply[256], buf[16];
+  StaticJsonDocument<320> JSON;
+  char reply[272], buf[16];
 
   JSON["date"] = getDateString();
   JSON["time"] = getTimeString(false);
@@ -68,17 +68,24 @@ static void updateUI() {
   JSON["co2median"] = scd30_co2ppm;
   JSON["vbat"] = ((int)(getVBAT()*100)) / 100.0;
   JSON["co2status"] = int(co2status);
-  JSON["webserverTimeout"] = (webserverTimeout*1000 - (millis()-webserverRequestMillis))/1000;
+  if (wifiSettings.webserverAutoOff || co2status == NOOP)
+    JSON["webserverTimeout"] = (webserverTimeout*1000 - (millis()-webserverRequestMillis))/1000;
+  else
+    JSON["webserverTimeout"] = -1;
   JSON["calibrationTimeout"] = scd30_calibrate_countdown;
   JSON["warmupTimeout"] = scd30_warmup_countdown;
+  if (mqttSettings.enabled)
+    JSON["mqttMessages"] = mqtt_messages();
+  else
+    JSON["mqttMessages"] = -1;
 #ifdef HAS_LORAWAN_SHIELD
   if (lorawanSettings.enabled && lorawanSession.lmic.devaddr > 0) {
     sprintf(buf, "%08X", lorawanSession.lmic.devaddr);
     JSON["loraDevAddr"] = buf;
-    JSON["loraSeqnoUp"] = lorawanSession.lmic.seqnoUp;
+    JSON["loraSeqnoUp"] = lorawanSession.lmic.seqnoUp+1;
   } else {
     JSON["loraDevAddr"] = "--------";
-    JSON["loraSeqnoUp"] = "--";
+    JSON["loraSeqnoUp"] = 0;
   }
 #endif
 #ifdef HAS_LORAWAN_SHIELD
@@ -138,28 +145,41 @@ void webserver_start(uint16_t timeout) {
   webserver.on("/ui", HTTP_GET, updateUI);
 
   // handle RESTful requests
-  webserver.on(F("/readings"), HTTP_OPTIONS, sendCORS);
-  webserver.on(F("/readings"), HTTP_GET, handleREST);
+  if (wifiSettings.enableREST) {
+    webserver.on(F("/readings"), HTTP_OPTIONS, sendCORS);
+    webserver.on(F("/readings"), HTTP_GET, handleREST);
+  }
 
   // show page with log files
-  webserver.on("/logs", HTTP_GET, []() {
-    FSInfo fs_info;
+  if (settings.enableLogging) {
+    webserver.on("/logs", HTTP_GET, []() {
+      FSInfo fs_info;
 
-    logMsg("show logs");
-    LittleFS.info(fs_info);
-    uint32_t freeBytes = fs_info.totalBytes * 0.95 - fs_info.usedBytes;
-    String html = FPSTR(HEADER_html);
-    html += FPSTR(LOGS_HEADER_html);
-    html.replace("__BYTES_FREE__", String(freeBytes / 1024));
-    html += listDirHTML("/");
-    html += FPSTR(LOGS_FOOTER_html);
-    html += FPSTR(FOOTER_html);
-    html.replace("__FIRMWARE__", String(FIRMWARE_VERSION));
-    html.replace("__BUILD__", String(__DATE__)+" "+String(__TIME__));
-    webserver.send(200, "text/html", html);
-    Serial.println(F("Show log files."));
-    webserverRequestMillis = millis();
-  });
+      logMsg("show logs");
+      LittleFS.info(fs_info);
+      uint32_t freeBytes = fs_info.totalBytes * 0.95 - fs_info.usedBytes;
+      String html = FPSTR(HEADER_html);
+      html += FPSTR(LOGS_HEADER_html);
+      html.replace("__BYTES_FREE__", String(freeBytes / 1024));
+      html += listDirHTML("/");
+      html += FPSTR(LOGS_FOOTER_html);
+      html += FPSTR(FOOTER_html);
+      html.replace("__FIRMWARE__", String(FIRMWARE_VERSION));
+      html.replace("__BUILD__", String(__DATE__)+" "+String(__TIME__));
+      webserver.send(200, "text/html", html);
+      Serial.println(F("Show log files."));
+      webserverRequestMillis = millis();
+    });
+
+    // delete all log files
+    webserver.on("/rmlogs", HTTP_GET, []() {
+      requirePassword();
+      logMsg("remove logs");
+      removeLogs();
+      webserver.send(200, "text/plain", "OK");
+      webserverRequestMillis = millis();
+    });
+  }
 
   // handle request to update firmware
   webserver.on("/update", HTTP_GET, []() {
@@ -185,15 +205,6 @@ void webserver_start(uint16_t timeout) {
 #endif
     html += settings.enableLogging ? "1" : "0";
     webserver.send(200, "text/html", html);
-  });
-
-  // delete all log files
-  webserver.on("/rmlogs", HTTP_GET, []() {
-    requirePassword();
-    logMsg("remove logs");
-    removeLogs();
-    webserver.send(200, "text/plain", "OK");
-    webserverRequestMillis = millis();
   });
 
   // handle firmware upload
@@ -242,10 +253,12 @@ void webserver_start(uint16_t timeout) {
     webserver.send(200, "text/plain", "OK");
   });
 
-  webserver.on("/sendlogs", HTTP_GET, []() {
-    logMsg("send all logs");
-    sendAllLogs();
-  });
+  if (settings.enableLogging) {
+    webserver.on("/sendlogs", HTTP_GET, []() {
+      logMsg("send all logs");
+      sendAllLogs();
+    });
+  }
 
   webserver.on("/restart", HTTP_GET, []() {
     webserver.send(200, "text/plain", "OK");
@@ -263,7 +276,7 @@ void webserver_start(uint16_t timeout) {
 #ifdef HAS_LORAWAN_SHIELD
   webserver.on("/reset/lorawan", HTTP_GET, []() {
     requirePassword();
-    if (resetLoRaWANSettings() && resetLoRaWANSession)
+    if (resetLoRaWANSession() && resetLoRaWANSettings())
       webserver.send(200, "text/plain", "OK");
     else
       webserver.send(200, "text/plain", "ERR");
@@ -431,7 +444,11 @@ void webserver_start(uint16_t timeout) {
       html.replace("__WEBAUTOOFF__", "checked");
     else
       html.replace("__WEBAUTOOFF__", "");
-    if (wifiSettings.enableWLANUplink)
+    if (wifiSettings.enableREST)
+      html.replace("__RESTAPI__", "checked");
+    else
+      html.replace("__RESTAPI__", "");
+    if (wifiSettings.enableWLANUplink || wifiSettings.enableREST)
       html.replace("__WLAN__", "checked");
     else
       html.replace("__WLAN__", "");  
@@ -464,7 +481,7 @@ void webserver_start(uint16_t timeout) {
       if (!settings.enableNOOP)
         webserver_settimeout(wifiSettings.webserverTimeout);
     }     
-    if (webserver.arg("stassid").length() >= 4 && webserver.arg("stassid").length() <= 31)
+    if (webserver.arg("stassid").length() >= 3 && webserver.arg("stassid").length() <= 31)
       strncpy(wifiSettings.wifiStaSSID, webserver.arg("stassid").c_str(), 31);
     if (webserver.arg("stapassword").length() >= 8 && webserver.arg("stapassword").length() <= 31)
       strncpy(wifiSettings.wifiStaPassword, webserver.arg("stapassword").c_str(), 31);  
@@ -488,6 +505,13 @@ void webserver_start(uint16_t timeout) {
       wifiSettings.enableWLANUplink = true;
     else
       wifiSettings.enableWLANUplink = false;
+    if (webserver.arg("restapi") == "on") {
+      wifiSettings.enableREST = true;
+      wifiSettings.webserverAutoOff = false;
+      wifiSettings.enableWLANUplink = true;
+    } else {
+      wifiSettings.enableREST = false;
+    }
     if (webserver.arg("mqtt") == "on")
       mqttSettings.enabled = true;
     else
@@ -500,6 +524,17 @@ void webserver_start(uint16_t timeout) {
       mqttSettings.enableJSON = false;
     else
       mqttSettings.enableJSON = true;
+
+    // sanity checks
+    if (webserver.arg("stassid").length() <= 2 || webserver.arg("stapassword").length() < 8) {
+      wifiSettings.enableREST = false;
+      wifiSettings.enableWLANUplink = false;
+      mqttSettings.enabled = false;
+    }
+    if (!wifiSettings.enableWLANUplink) {
+      wifiSettings.enableREST = false;
+      mqttSettings.enabled = false;
+    }
 
     if (saveWifiSettings() && saveMQTTSettings())
       webserver.sendHeader("Location", "/network?saved", true);
@@ -637,7 +672,14 @@ void webserver_start(uint16_t timeout) {
 #endif
 
   webserver.onNotFound([]() {
-    if (!handleSendFile(webserver.uri())) {
+    String html;
+
+    webserver_tickle();
+    if (webserver.uri().endsWith("/")) {  // send main page
+      html += HEADER_html;
+      html += ROOT_html;
+      webserver.send(200, "text/html", html);
+    } else if (!handleSendFile(webserver.uri())) {  // send log file(s)
       webserver.send(404, "text/plain", "Error 404: file not found");
     }
   });
@@ -649,7 +691,7 @@ void webserver_start(uint16_t timeout) {
     sprintf(buf, "webserver, timeout %d secs", timeout);
     logMsg(buf);
   } else {
-    Serial.print(F("Starting webserver (without timeout)..."));
+    Serial.println(F("Starting webserver (without timeout)..."));
     logMsg("webserver, no timeout");
   }
   webserver.begin();
@@ -681,7 +723,7 @@ uint32_t webserver_idle() {
 // returns false if webserver timeout has not been reached
 // if force is true webserver will be stopped if running
 bool webserver_stop(bool force) {
-  if (!wifiSettings.webserverAutoOff && co2status != NOOP)
+  if (!wifiSettings.webserverAutoOff && co2status != NOOP)  // not running...
     return false;
     
   if (!force && (millis() - webserverRequestMillis) < (webserverTimeout*1000))

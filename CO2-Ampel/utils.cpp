@@ -1,5 +1,5 @@
 /***************************************************************************
-  Copyright (c) 2020 Lars Wessels
+  Copyright (c) 2020-2021 Lars Wessels
 
   This file a part of the "CO2-Ampel" source code.
   https://github.com/lrswss/co2ampel
@@ -319,7 +319,8 @@ uint32_t hex2num(const char *buf) {
 // print byte array as hex string, optionally masking last 4 bytes
 void printHEX8bit(uint8_t *arr, uint8_t len, bool ln, bool reverse, bool mask) {
   char hex[len * 2 + 1];
-  array2string(arr, mask ? len-8 : len, hex, reverse);
+  memset(hex, 0, (len * 2 + 1));
+  array2string(arr, mask ? len-4 : len, hex, reverse);
   if (mask)
     strcat(hex, "XXXXXXXX");
   Serial.print(hex);
